@@ -10,10 +10,9 @@ export class ReportsService {
     return prisma.report.create({
       data: {
         reporterId: dto.reporterId,
-        reportedId: dto.targetUserId ?? null, // 스키마 필드명에 맞춤
-        // messageId: dto.messageId ?? null,   // ← 현재 스키마에 없음(컴파일 에러 원인) → 제거
+        reportedId: dto.targetUserId ?? null,
+        // postId: dto.postId ?? null, // 스키마에 postId가 있을 때만 사용
         reason: dto.reason,
-        evidenceUrls: dto.evidenceUrls ?? [],
         status: ReportStatus.PENDING,
       },
     });
