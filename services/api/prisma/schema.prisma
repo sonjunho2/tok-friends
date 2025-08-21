@@ -4,9 +4,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   // 앱 런타임: Neon "pooled" 연결
+  directUrl = env("DIRECT_URL")     // 마이그레이션: Neon "direct" 연결
 }
+
 
 model User {
   id             String   @id @default(cuid())
