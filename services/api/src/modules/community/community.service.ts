@@ -13,7 +13,7 @@ export class CommunityService {
     const report = await this.prisma.report.create({
       data: {
         reporterId,
-        targetUserId: dto.targetUserId,
+        reportedId: dto.targetUserId,
         postId: dto.postId,
         reason: dto.reason,
       },
