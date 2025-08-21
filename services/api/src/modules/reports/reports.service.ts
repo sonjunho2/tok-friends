@@ -16,6 +16,12 @@ export class ReportsService {
     }});
   }
   async list(status?: string) {
-    return prisma.report.findMany({ where: status ? { status } : undefined, orderBy: { createdAt: 'desc' } });
+   const normalized = status?.toUpperCase() as keyof typeof ReportStatus | undefined;
+const statusEnum = normalized ? ReportStatus[normalized] : undefined;
+
+return prisma.report.findMany({
+  where: statusEnum ? { status: statusEnum } : undefined,
+  orderBy: { createdAt: 'desc' },
+});
   }
 }
