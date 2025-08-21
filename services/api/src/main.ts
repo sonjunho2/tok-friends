@@ -27,7 +27,7 @@ async function bootstrap() {
   // CORS
   const corsOrigin = parseCorsOrigin(process.env.CORS_ORIGIN);
   app.enableCors({
-    origin: corsOrigin,
+    origin: true,
     credentials: true,
   });
 
@@ -50,7 +50,7 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   // Render 등 PaaS 환경에서 제공하는 PORT 사용
-  const PORT = Number(process.env.PORT) || 8000;
+  const PORT = Number(process.env.PORT) || 3000;
   await app.listen(PORT, '0.0.0.0');
 
   const url = await app.getUrl();
