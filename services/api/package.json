@@ -4,11 +4,10 @@
   "private": true,
   "engines": { "node": "20.x" },
   "scripts": {
-    "start": "node dist/main.js",
-    "start:prod": "node dist/main.js",
+    "start": "prisma migrate deploy && node dist/main.js",
+    "start:prod": "prisma migrate deploy && node dist/main.js",
     "start:dev": "nest start --watch",
     "build": "nest build",
-    "prebuild": "prisma generate",
     "postinstall": "prisma generate",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint \"src/**/*.ts\"",
