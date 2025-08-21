@@ -128,30 +128,31 @@ model Post {
 }
 
 model Report {
-  id          Int       @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
 
-  /// 신고자 (User.reportsByMe 의 반대편)
-  reporter    User      @relation("reports_by", fields: [reporterId], references: [id])
-  reporterId  Int
+  /// 신고자 (User.reportsByMe 반대편)
+  reporter    User    @relation("reports_by", fields: [reporterId], references: [id])
+  reporterId  String  // ★ User.id가 String(TEX)에 맞춤
 
-  /// 피신고자 (User.reportsToMe 의 반대편) — 유저 신고가 아닐 수 있으니 선택적
-  reported    User?     @relation("reports_to", fields: [reportedId], references: [id], onDelete: SetNull)
-  reportedId  Int?
+  /// 피신고자 (선택)
+  reported    User?   @relation("reports_to", fields: [reportedId], references: [id], onDelete: SetNull)
+  reportedId  String?
 
-  /// 게시글 신고(선택) — Post.reports 의 반대편
-  post        Post?     @relation(fields: [postId], references: [id], onDelete: SetNull)
-  postId      Int?
+  /// 게시글 신고(선택)
+  post        Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)
+  postId      String? // ★ Post.id가 String이면 String
 
   reason      String
   status      ReportStatus @default(PENDING)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([reporterId])
   @@index([reportedId])
   @@index([postId])
 }
+
 
 
 
