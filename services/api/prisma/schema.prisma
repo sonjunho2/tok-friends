@@ -138,6 +138,7 @@ model Report {
   post       Post? @relation(fields: [postId], references: [id])
   messageId String?           // 채팅 메시지 신고시 연결용(선택)
   status    String? @default("PENDING") // 혹은 enum으로 설계해도 됨
+  createdAt  DateTime @default(now())
 }
 
 model Block {
