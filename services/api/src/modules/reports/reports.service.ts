@@ -1,3 +1,4 @@
+import { ReportStatus, Prisma } from '@prisma/client';
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
@@ -11,7 +12,7 @@ export class ReportsService {
       messageId: dto.messageId,
       reason: dto.reason,
       evidenceUrls: dto.evidenceUrls || [],
-      status: 'pending'
+      status: ReportStatus.PENDING
     }});
   }
   async list(status?: string) {
