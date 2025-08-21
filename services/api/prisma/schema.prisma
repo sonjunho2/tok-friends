@@ -126,20 +126,17 @@ model Post {
 }
 
 model Report {
-  id           String   @id @default(cuid())
-  reporterId   String
-  targetUserId String?
-  postId       String?
-  reason       String
-  createdAt    DateTime @default(now())
-
-  reporter   User  @relation("reports_by", fields: [reporterId], references: [id])
-  targetUser User? @relation("reports_to", fields: [targetUserId], references: [id])
-  post       Post? @relation(fields: [postId], references: [id])
-  messageId String?           // 채팅 메시지 신고시 연결용(선택)
-  status    String? @default("PENDING") // 혹은 enum으로 설계해도 됨
-  createdAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  reporterId    String
+  targetUserId  String
+  messageId     String?          // 채팅 신고가 아닐 수 있으니 선택값
+  reason        String
+  evidenceUrls  String[] @default([])  // 스크린샷 등 URL 배열
+  status        String   @default("pending")  // 서비스 코드와 맞춰 소문자
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
+
 
 model Block {
   id             String   @id @default(cuid())
