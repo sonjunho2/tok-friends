@@ -6,7 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 
 function parseCorsOrigin(value?: string): true | string[] {
-  // CORS_ORIGIN이 비어있거나 "*"면 모든 오리진 허용(요청 오리진 반사) -> credentials와 함께 사용 가능
+  // CORS_ORIGIN이 비어있거나 "*"면 모든 오리진 허용
   if (!value || value.trim() === '' || value.trim() === '*') return true;
   return value
     .split(',')
@@ -17,6 +17,7 @@ function parseCorsOrigin(value?: string): true | string[] {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Global Pipes
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -24,14 +25,17 @@ async function bootstrap() {
     }),
   );
 
-  // CORS
+  // CORS 설정 수정 - parseCorsOrigin 함수 실제 사용
   const corsOrigin = parseCorsOrigin(process.env.CORS_ORIGIN);
+  
   app.enableCors({
-    origin: true,
+    origin: corsOrigin,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
-  // Helmet (Swagger와 CSP 충돌 방지)
+  // Helmet
   app.use(
     helmet({
       contentSecurityPolicy: false,
