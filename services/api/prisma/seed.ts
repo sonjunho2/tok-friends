@@ -13,24 +13,23 @@ async function seedAdminUser() {
     where: { email },
     update: {
       passwordHash,
-      role: 'ADMIN',
-      status: 'ACTIVE',
+      // ✅ DB 실제 규칙에 맞춤
+      role: 'SUPER_ADMIN',     // 기존 DB 값
+      status: 'active',        // 소문자
+      provider: 'local',       // 기존 DB 값
       displayName: 'Super Admin',
-      provider: 'email',
       trustScore: 100,
       lang: 'ko',
-      // update에는 dob 생략 (이미 값이 있을 수 있음)
     },
     create: {
       email,
       passwordHash,
-      role: 'ADMIN',
-      status: 'ACTIVE',
+      role: 'SUPER_ADMIN',
+      status: 'active',
+      provider: 'local',
       displayName: 'Super Admin',
-      provider: 'email',
       trustScore: 100,
       lang: 'ko',
-      // ✅ 이 필드가 필수라서 반드시 넣어야 함
       dob: new Date('1990-01-01T00:00:00.000Z'),
     },
   });
@@ -49,12 +48,9 @@ async function main() {
   console.log('✅ Seed completed: admin user + 10 topics created/updated');
   console.log('   └─ admin email: admin@local / password: Admin123!');
 }
-
-main()
-  .catch((e) => {
-    console.error('❌ Seed failed:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().catch((e) => {
+  console.error('❌ Seed failed:', e);
+  process.exit(1);
+}).finally(async () => {
+  await prisma.$disconnect();
+});
