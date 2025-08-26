@@ -9,7 +9,7 @@ import { HealthModule } from './modules/health/health.module';
 import { TopicsModule } from './modules/topics/topics.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { CommunityModule } from './modules/community/community.module';
-import { MetricsModule } from './modules/metrics/metrics.module';
+//import { MetricsModule } from './modules/metrics/metrics.module';
 import { JwtAuthGuard } from './modules/auth/jwt.guard';
 
 @Module({
