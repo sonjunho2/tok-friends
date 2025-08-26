@@ -15,21 +15,33 @@ jobs:
     defaults:
       run:
         working-directory: services/api
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: "20" }
-      - run: npm ci
-      - run: npx prisma generate
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm install
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
       - name: Show masked DB URL
         run: |
           echo "${{ secrets.DATABASE_URL }}" | sed 's/:[^@]*@/:****@/'
           echo "${{ secrets.DIRECT_URL }}" | sed 's/:[^@]*@/:****@/'
+      
       - name: Migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
         run: npx prisma migrate deploy
+
       - name: Seed DB
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
