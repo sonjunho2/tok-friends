@@ -9,7 +9,6 @@ datasource db {
   directUrl = env("DIRECT_URL")     // 마이그레이션: Neon "direct" 연결
 }
 
-
 model User {
   id             String   @id @default(cuid())
   createdAt      DateTime @default(now())
@@ -132,15 +131,15 @@ model Report {
 
   /// 신고자 (User.reportsByMe 반대편)
   reporter    User    @relation("reports_by", fields: [reporterId], references: [id])
-  reporterId  String  // ★ User.id가 String(TEX)에 맞춤
+  reporterId  String  // User.id가 String(CUID)에 맞춤
 
   /// 피신고자 (선택)
   reported    User?   @relation("reports_to", fields: [reportedId], references: [id], onDelete: SetNull)
   reportedId  String?
 
-  /// 게시글 신고(선택)
+  /// 게시글 신고 (선택)
   post        Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)
-  postId      String? // ★ Post.id가 String이면 String
+  postId      String? // Post.id가 String이면 String
 
   reason      String
   status      ReportStatus @default(PENDING)
@@ -152,9 +151,6 @@ model Report {
   @@index([reportedId])
   @@index([postId])
 }
-
-
-
 
 model Block {
   id             String   @id @default(cuid())
@@ -220,6 +216,7 @@ model RefundRequest {
   createdAt DateTime @default(now())
   decidedAt DateTime?
 }
+
 enum ReportStatus {
   PENDING
   REVIEWING
