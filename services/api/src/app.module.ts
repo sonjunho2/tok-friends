@@ -10,6 +10,7 @@ import { TopicsModule } from './modules/topics/topics.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { CommunityModule } from './modules/community/community.module';
 import { JwtAuthGuard } from './modules/auth/jwt.guard';
+import { MetricsModule } from './modules/metrics/metrics.module';
 
 @Module({
   imports: [
