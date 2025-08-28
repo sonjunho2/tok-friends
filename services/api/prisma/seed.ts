@@ -1,42 +1,43 @@
 // services/api/prisma/seed.ts
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
 async function seedAdminUser() {
   const email = 'admin@example.com';
   const plain = 'Admin123!';
-  const passwordHash = await bcrypt.hash(plain, 10);
+
+  // ✅ 로그인 검증(argon2.verify)에 맞춰 argon2로 통일
+  const passwordHash = await argon2.hash(plain);
 
   await prisma.user.upsert({
     where: { email },
     update: {
       passwordHash,
-      role: 'SUPER_ADMIN',   // DB에 이미 이렇게 들어가 있었음
-      status: 'active',      // 소문자
-      provider: 'local',     // DB 값에 맞춤
+      role: 'SUPER_ADMIN',
+      status: 'active',
+      provider: 'email',     // signup과 일관성 있게 'email' 사용
       displayName: 'Super Admin',
       trustScore: 100,
       lang: 'ko',
-      // update에는 필수값 추가 불필요(이미 존재할 수 있으니 변경 최소화)
     },
     create: {
       email,
       passwordHash,
       role: 'SUPER_ADMIN',
       status: 'active',
-      provider: 'local',
+      provider: 'email',
       displayName: 'Super Admin',
       trustScore: 100,
       lang: 'ko',
-      // ✅ 필수로 보이는 필드들 채움
+      // 필수로 보이는 필드 채움
       dob: new Date('1990-01-01T00:00:00.000Z'),
-      gender: 'unknown',     // 텍스트 컬럼: 'male'/'female' 등 가능. 우선 'unknown'
-      // 아래는 NOT NULL일 가능성 대비 값 채움(문자열 컬럼이므로 빈문자/기본값)
-      phoneHash: '',         // NOT NULL이면 빈문자라도 들어가게
-      region1: 'KR',         // 대분류 지역(한국)
-      region2: 'Seoul',      // 소분류 지역(서울)
+      gender: 'unknown',
+      // schema 상 선택(optional)이라면 생략 가능하지만 안전하게 기본값 지정
+      phoneHash: '',
+      region1: 'KR',
+      region2: 'Seoul',
     },
   });
 }
@@ -52,7 +53,7 @@ async function main() {
   await seedAdminUser();
   await seedTopics();
   console.log('✅ Seed completed: admin user + 10 topics created/updated');
-  console.log('   └─ admin email: admin@local / password: Admin123!');
+  console.log('   └─ admin email: admin@example.com / password: Admin123!');
 }
 
 main()
