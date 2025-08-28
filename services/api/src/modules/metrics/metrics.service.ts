@@ -1,4 +1,3 @@
-// services/api/src/modules/metrics/metrics.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 
@@ -24,7 +23,6 @@ export class MetricsService {
         this.prisma.topic.count(),
       ]);
 
-      // 최근 30일간 신규 가입자
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
@@ -42,7 +40,7 @@ export class MetricsService {
           total: totalReports,
           pending: pendingReports,
         },
-        bannedWords: topicCount, // 임시로 토픽 수 사용
+        bannedWords: topicCount,
         activeAnnouncements: 0,
         newUsers: {
           day: Math.max(0, Math.floor(recentUsers / 30)),
