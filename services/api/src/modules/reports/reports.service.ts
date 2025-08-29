@@ -7,9 +7,7 @@ import { ReportStatus } from '@prisma/client';
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
-  // 최근 신고 n건 (기본 정렬: 최신 생성순)
   async listRecent(limit: number) {
-    // reporter/reported/post 연관 정보 일부 포함
     const rows = await this.prisma.report.findMany({
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -19,12 +17,10 @@ export class ReportsService {
         post: { select: { id: true, topicId: true, createdAt: true } },
       },
     });
-
-    // 프론트에서 보기 편한 형태로 가공(필요 시)
     return rows.map((r) => ({
       id: r.id,
       reason: r.reason,
-      status: r.status, // ReportStatus enum
+      status: r.status,
       createdAt: r.createdAt,
       reporter: r.reporter,
       reported: r.reported,
@@ -32,11 +28,35 @@ export class ReportsService {
     }));
   }
 
-  // 상태별 목록(필요 시)
-  async listByStatus(status?: ReportStatus) {
-    return this.prisma.report.findMany({
-      where: status ? { status } : undefined,
-      orderBy: { createdAt: 'desc' },
-    });
+  async paginate(status: string | undefined, opt: { skip: number; take: number }) {
+    const normalized = status?.toUpperCase() as keyof typeof ReportStatus | undefined;
+    const statusEnum = normalized ? ReportStatus[normalized] : undefined;
+
+    const where = statusEnum ? { status: statusEnum } : undefined;
+
+    const [total, rows] = await Promise.all([
+      this.prisma.report.count({ where }),
+      this.prisma.report.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: opt.skip,
+        take: opt.take,
+        include: {
+          reporter: { select: { id: true, email: true, displayName: true } },
+          reported: { select: { id: true, email: true, displayName: true } },
+        },
+      }),
+    ]);
+
+    const items = rows.map((r) => ({
+      id: r.id,
+      reason: r.reason,
+      status: r.status,
+      createdAt: r.createdAt,
+      reporter: r.reporter,
+      reported: r.reported,
+    }));
+
+    return [total, items] as const;
   }
 }
