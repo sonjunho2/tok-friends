@@ -1,5 +1,5 @@
 // services/api/prisma/seed.ts
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 import * as argon2 from 'argon2'
 
 const prisma = new PrismaClient()
@@ -51,27 +51,27 @@ async function seedTopics() {
 }
 
 async function seedAnnouncements() {
-  // 🔎 Postgres에서 "Announcement" 테이블 존재 여부 확인 (대소문자 구분)
-  const res = await prisma.$queryRaw<{ regclass: string | null }[]>`
-    SELECT to_regclass('public."Announcement"') as regclass;
-  `
-  const exists = !!(res && res[0] && res[0].regclass)
-  if (!exists) {
-    console.log('ℹ️ Announcement table not found. Skipping announcements seeding.')
-    return
+  // 테이블이 아직 없을 수 있으므로 안전하게 시도-캐치
+  try {
+    await prisma.announcement.upsert({
+      where: { id: 'seed-welcome' },
+      update: {},
+      create: {
+        id: 'seed-welcome',
+        title: '관리자 패널 오픈',
+        body: '딱친 관리자 패널이 준비되었습니다.',
+        isActive: true,
+        startsAt: new Date(),
+      },
+    })
+  } catch (e: any) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2021') {
+      // The table `Announcement` does not exist
+      console.log('ℹ️ Announcement table not found. Skipping announcements seeding.')
+      return
+    }
+    throw e
   }
-
-  await prisma.announcement.upsert({
-    where: { id: 'seed-welcome' },
-    update: {},
-    create: {
-      id: 'seed-welcome',
-      title: '관리자 패널 오픈',
-      body: '딱친 관리자 패널이 준비되었습니다.',
-      isActive: true,
-      startsAt: new Date(),
-    },
-  })
 }
 
 async function main() {
