@@ -55,4 +55,16 @@ async function main() {
 main()
   .catch((e) => { console.error('❌ Seed failed:', e); process.exit(1); })
   .finally(async () => { await prisma.$disconnect(); });
+// --- seed announcements (idempotent) ---
+await prisma.announcement.upsert({
+  where: { id: 'seed-welcome' },
+  update: {},
+  create: {
+    id: 'seed-welcome',
+    title: '관리자 패널 오픈',
+    body: '딱친 관리자 패널이 준비되었습니다.',
+    isActive: true,
+    startsAt: new Date(),
+  },
+});
 
