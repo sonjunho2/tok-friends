@@ -1,10 +1,15 @@
+// services/api/src/modules/users/users.service.ts
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { PrismaService } from 'nestjs-prisma';
 
 @Injectable()
 export class UsersService {
+  constructor(private readonly prisma: PrismaService) {}
+
   async byId(id: string) {
-    return prisma.user.findUnique({ where: { id }, include: { profile: true } });
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: { profile: true },
+    });
   }
 }
