@@ -22,7 +22,7 @@ export class AnnouncementsController {
         orderBy: { createdAt: 'desc' },
         skip,
         take,
-        select: { id: true, title: true, body: true, isActive: true, createdAt: true },
+        select: { id: true, title: true, body: true, isActive: true, createdAt: true, startsAt: true, endsAt: true },
       }),
     ]);
 
@@ -38,9 +38,15 @@ export class AnnouncementsController {
   }
 
   @Post()
-  async create(@Body() dto: { title: string; body: string; isActive?: boolean }) {
+  async create(@Body() dto: { title: string; body: string; isActive?: boolean; startsAt?: string; endsAt?: string | null }) {
     const created = await this.prisma.announcement.create({
-      data: { title: dto.title, body: dto.body, isActive: !!dto.isActive },
+      data: {
+        title: dto.title,
+        body: dto.body,
+        isActive: !!dto.isActive,
+        startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
+        endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
+      },
     });
     return { ok: true, data: created };
   }
@@ -48,11 +54,17 @@ export class AnnouncementsController {
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() dto: { title?: string; body?: string; isActive?: boolean },
+    @Body() dto: { title?: string; body?: string; isActive?: boolean; startsAt?: string; endsAt?: string | null },
   ) {
     const updated = await this.prisma.announcement.update({
       where: { id },
-      data: { title: dto.title, body: dto.body, isActive: dto.isActive },
+      data: {
+        title: dto.title,
+        body: dto.body,
+        isActive: dto.isActive,
+        startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
+        endsAt: dto.endsAt === null ? null : dto.endsAt ? new Date(dto.endsAt) : undefined,
+      },
     });
     return { ok: true, data: updated };
   }
