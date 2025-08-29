@@ -22,13 +22,11 @@ import { JwtAuthGuard } from './modules/auth/jwt.guard';
     ChatsModule,
     ReportsModule,
     MetricsModule,
-    AnnouncementsModule,
+    AnnouncementsModule, // ✅ 추가
   ],
   providers: [
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })
 export class AppModule {}
+
