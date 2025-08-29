@@ -2,6 +2,7 @@
 import { Controller, Get, Patch, Query, Param, Body } from '@nestjs/common';
 import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from 'nestjs-prisma';
+import { Prisma } from '@prisma/client';
 
 @ApiTags('admin/users')
 @ApiBearerAuth()
@@ -22,11 +23,11 @@ export class AdminUsersController {
     const take = Math.min(50, Math.max(1, parseInt(limit as string, 10) || 10));
     const skip = (p - 1) * take;
 
-    const where = search
+    const where: Prisma.UserWhereInput | undefined = search
       ? {
           OR: [
-            { email: { contains: search, mode: 'insensitive' } },
-            { displayName: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search } },        // 타입 충돌 방지를 위해 mode 제거(대소문자 구분은 필요 시 ilike 로 교체)
+            { displayName: { contains: search } },
           ],
         }
       : undefined;
@@ -69,7 +70,7 @@ export class AdminUsersController {
 
   @Patch(':id/status')
   async updateStatus(@Param('id') id: string, @Body() body: { status: string }) {
-    const next = String(body?.status || '').toLowerCase(); // DB가 소문자라면 맞춤
+    const next = String(body?.status || '').toLowerCase();
     const updated = await this.prisma.user.update({
       where: { id },
       data: { status: next },
