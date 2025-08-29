@@ -216,6 +216,15 @@ model RefundRequest {
   createdAt DateTime @default(now())
   decidedAt DateTime?
 }
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  isActive  Boolean  @default(false)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime @default(now())
+}
 
 enum ReportStatus {
   PENDING
