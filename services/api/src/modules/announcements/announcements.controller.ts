@@ -5,7 +5,7 @@ import { PrismaService } from 'nestjs-prisma';
 @ApiTags('admin/announcements')
 @ApiBearerAuth()
 @Controller('admin/announcements')
-export class AnnouncementsController {
+export class AdminAnnouncementsController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
@@ -15,7 +15,6 @@ export class AnnouncementsController {
     const p = Math.max(1, parseInt(page as string, 10) || 1);
     const take = Math.min(50, Math.max(1, parseInt(limit as string, 10) || 20));
     const skip = (p - 1) * take;
-
     const [total, rows] = await Promise.all([
       this.prisma.announcement.count(),
       this.prisma.announcement.findMany({
@@ -25,7 +24,6 @@ export class AnnouncementsController {
         select: { id: true, title: true, body: true, isActive: true, createdAt: true, startsAt: true, endsAt: true },
       }),
     ]);
-
     return {
       ok: true,
       page: p,
@@ -73,5 +71,71 @@ export class AnnouncementsController {
   async remove(@Param('id') id: string) {
     await this.prisma.announcement.delete({ where: { id } });
     return { ok: true };
+  }
+}
+
+// 공용 공지사항 API (모바일앱에서 사용)
+@ApiTags('announcements')
+@Controller('announcements')
+export class AnnouncementsController {
+  constructor(private readonly prisma: PrismaService) {}
+
+  @Get('active')
+  async getActiveAnnouncements() {
+    const announcements = await this.prisma.announcement.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { startsAt: null },
+          { startsAt: { lte: new Date() } },
+        ],
+        AND: [
+          {
+            OR: [
+              { endsAt: null },
+              { endsAt: { gte: new Date() } },
+            ],
+          },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        createdAt: true,
+        startsAt: true,
+        endsAt: true,
+      },
+    });
+    return {
+      ok: true,
+      data: announcements,
+    };
+  }
+
+  @Get()
+  @ApiQuery({ name: 'isActive', required: false, type: Boolean })
+  async getAnnouncements(@Query('isActive') isActive?: string) {
+    if (isActive === 'true') {
+      return this.getActiveAnnouncements();
+    }
+    
+    const announcements = await this.prisma.announcement.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        isActive: true,
+        createdAt: true,
+        startsAt: true,
+        endsAt: true,
+      },
+    });
+    return {
+      ok: true,
+      data: announcements,
+    };
   }
 }
