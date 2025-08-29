@@ -2,6 +2,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { MetricsService } from './metrics.service';
+// ✅ 경로 정정: metrics 모듈 기준 상위 폴더(auth)로 이동
 import { Public } from '../auth/public.decorator';
 
 @ApiTags('metrics')
