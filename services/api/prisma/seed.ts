@@ -51,7 +51,16 @@ async function seedTopics() {
 }
 
 async function seedAnnouncements() {
-  // 공지: 여러 번 실행돼도 중복 없이 유지 (idempotent)
+  // 🔎 Postgres에서 "Announcement" 테이블 존재 여부 확인 (대소문자 구분)
+  const res = await prisma.$queryRaw<{ regclass: string | null }[]>`
+    SELECT to_regclass('public."Announcement"') as regclass;
+  `
+  const exists = !!(res && res[0] && res[0].regclass)
+  if (!exists) {
+    console.log('ℹ️ Announcement table not found. Skipping announcements seeding.')
+    return
+  }
+
   await prisma.announcement.upsert({
     where: { id: 'seed-welcome' },
     update: {},
