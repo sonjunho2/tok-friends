@@ -1,8 +1,8 @@
-// services/api/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from 'nestjs-prisma';
 import { APP_GUARD } from '@nestjs/core';
+
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { HealthModule } from './modules/health/health.module';
@@ -10,7 +10,9 @@ import { TopicsModule } from './modules/topics/topics.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { CommunityModule } from './modules/community/community.module';
 import { JwtAuthGuard } from './modules/auth/jwt.guard';
+
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -22,6 +24,10 @@ import { MetricsModule } from './modules/metrics/metrics.module';
     TopicsModule,
     PostsModule,
     CommunityModule,
+
+    // ✅ 404 해결: 실제 라우트 등록
+    MetricsModule,
+    ReportsModule,
   ],
   providers: [
     {
