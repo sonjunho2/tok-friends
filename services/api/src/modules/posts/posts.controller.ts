@@ -16,6 +16,15 @@ export class PostsController {
   async create(@Request() req: any, @Body() dto: CreatePostDto) {
     return this.postsService.create(req.user.id, dto);
   }
+  
+  @Get('posts')
+  async listAllPosts(
+    @Query('cursor') cursor?: string,
+    @Query('take') take?: string,
+  ) {
+    const takeNum = take ? parseInt(take, 10) : 20;
+    return this.postsService.listAll(cursor, takeNum);
+  }
 
   @Get('topics/:id/posts')
   async listByTopic(
