@@ -37,6 +37,7 @@ async function seedAdminUser() {
       region2: 'Seoul',
     },
   })
+  console.log(`✅ Seeded/updated admin user: ${email}`)
 }
 
 async function seedTopics() {
