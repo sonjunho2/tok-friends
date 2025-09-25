@@ -9,18 +9,19 @@ import { EmailSignupDto, EmailLoginDto, AppleTokenDto } from './dto';
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
-  @Public()
-  @Post('signup/email')
-  signupEmail(@Body() dto: EmailSignupDto) {
-    return this.auth.signupEmail(dto);
-  }
+// auth.controller.ts 중 일부
+@Public()
+@Post(['signup/email', 'signup', 'register', 'users/signup', 'users/register'])
+signupEmailAliases(@Body() dto: EmailSignupDto) {
+  // 이메일 전용과 동일한 서비스 호출
+  return this.auth.signupEmail(dto);
+}
 
-  @Public()
-  @Post('login/email')
-  loginEmail(@Body() dto: EmailLoginDto) {
-    return this.auth.loginEmail(dto);
-  }
-
+@Public()
+@Post(['login/email', 'login'])
+loginEmailAliases(@Body() dto: EmailLoginDto) {
+  return this.auth.loginEmail(dto);
+}
   @Public()
   @Post('apple')
   loginApple(@Body() dto: AppleTokenDto) {
