@@ -24,6 +24,31 @@ export class PostsService {
     });
   }
 
+  async listAll(cursor?: string, take: number = 20) {
+    const posts = await this.prisma.post.findMany({
+      take: take + 1,
+      cursor: cursor ? { id: cursor } : undefined,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        userId: true,
+        topicId: true,
+        content: true,
+        createdAt: true,
+      },
+    });
+
+    const hasMore = posts.length > take;
+    const items = posts.slice(0, take);
+    const nextCursor = hasMore ? items[items.length - 1]?.id : null;
+
+    return {
+      items,
+      nextCursor,
+      hasMore,
+    };
+  }
+
   async listByTopic(topicId: string, cursor?: string, take: number = 20) {
     const posts = await this.prisma.post.findMany({
       where: { topicId },
