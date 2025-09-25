@@ -16,7 +16,7 @@ export class PostsController {
   async create(@Request() req: any, @Body() dto: CreatePostDto) {
     return this.postsService.create(req.user.id, dto);
   }
-  
+
   @Get('posts')
   async listAllPosts(
     @Query('cursor') cursor?: string,
