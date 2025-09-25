@@ -9,7 +9,7 @@ import { ChatsModule } from './modules/chats/chats.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
-import { PostsModule } from './modules/posts/posts.module'; // ✅ 추가
+import { PostsModule } from './modules/posts/posts.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/jwt.guard';
 
@@ -24,7 +24,7 @@ import { JwtAuthGuard } from './modules/auth/jwt.guard';
     ReportsModule,
     MetricsModule,
     AnnouncementsModule,
-    PostsModule, // ✅ 추가
+    PostsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
