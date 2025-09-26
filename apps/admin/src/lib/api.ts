@@ -71,7 +71,7 @@ export const adminAnnouncementsApi = {
       `admin/announcements${qs ? `?${qs}` : ''}`,
       { method: 'GET', auth: true },
     );
-    },
+  },
   create(dto: AnnouncementInput) {
     return req<{ ok: boolean; data: any }>('admin/announcements', {
       method: 'POST',
@@ -160,6 +160,28 @@ export const adminBlocksApi = {
     return req<{ ok: boolean }>(`admin/blocks/${id}`, {
       method: 'DELETE',
       auth: true,
+    });
+  },
+};
+
+/** Users (Admin) */
+export const adminUsersApi = {
+  list(params?: { page?: number; limit?: number; search?: string }) {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page ?? 1));
+    if (params?.limit) q.set('limit', String(params.limit ?? 10));
+    if (params?.search) q.set('search', params.search);
+    const qs = q.toString();
+    return req<{ ok: boolean; data: any[]; total?: number; items?: any[] }>(
+      `admin/users${qs ? `?${qs}` : ''}`,
+      { method: 'GET', auth: true },
+    );
+  },
+  updateStatus(id: string, status: string) {
+    return req<{ ok: boolean; data: any }>(`admin/users/${id}/status`, {
+      method: 'PATCH',
+      auth: true,
+      body: { status },
     });
   },
 };
