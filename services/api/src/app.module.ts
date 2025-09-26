@@ -13,6 +13,7 @@ import { PostsModule } from './modules/posts/posts.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/jwt.guard';
 import { FriendshipsModule } from './modules/friendships/friendships.module';
+import { DiscoverModule } from './modules/discover/discover.module';
 
 @Module({
   imports: [
@@ -27,9 +28,8 @@ import { FriendshipsModule } from './modules/friendships/friendships.module';
     AnnouncementsModule,
     PostsModule,
     FriendshipsModule,
+    DiscoverModule,
   ],
-  providers: [
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
-  ],
+  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
 export class AppModule {}
