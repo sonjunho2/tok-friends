@@ -1,0 +1,30 @@
+# tok-friends/render.yaml
+services:
+  - type: web
+    name: tok-friends-api
+    env: node
+    rootDir: services/api
+    buildCommand: |
+      npm install && npm run build
+    startCommand: |
+      npm run start:prod
+    plan: free
+    autoDeploy: true
+    numInstances: 1
+    region: singapore
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://tokfriends-admin.vercel.app,https://tokfriends.app,https://www.tokfriends.app
+      - key: PRISMA_FIELD_ENCRYPTION_KEY
+        sync: false
+      - key: RENDER
+        value: "true"
+    healthCheckPath: /health
