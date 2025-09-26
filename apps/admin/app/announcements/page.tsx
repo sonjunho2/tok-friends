@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { adminAnnouncementsApi, type AnnouncementInput } from '@/lib/api';
 import Table, { type Column } from '@/components/Table';
+import { useI18n } from '@/i18n';
 
 type AnnouncementRow = {
   id: string;
@@ -13,6 +14,7 @@ type AnnouncementRow = {
 };
 
 export default function AnnouncementsPage() {
+  const { t } = useI18n();
   const [rows, setRows] = useState<AnnouncementRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,10 +30,10 @@ export default function AnnouncementsPage() {
       if (res?.ok) {
         setRows(res.data as AnnouncementRow[]);
       } else {
-        setError('공지사항 목록 불러오기 실패');
+        setError(t('table.empty'));
       }
     } catch (e: any) {
-      setError(e?.message || '에러 발생');
+      setError(e?.message || 'Error');
     } finally {
       setLoading(false);
     }
@@ -66,8 +68,8 @@ export default function AnnouncementsPage() {
 
   const columns: Column<AnnouncementRow>[] = [
     { key: 'id', header: 'ID', className: 'w-24' },
-    { key: 'title', header: '제목' },
-    { key: 'body', header: '내용', className: 'max-w-[280px] truncate' },
+    { key: 'title', header: t('nav.announcements') },
+    { key: 'body', header: t('table.empty'), className: 'max-w-[280px] truncate' },
     { key: 'isActive', header: '활성화', render: (a) => (a.isActive ? '✅' : '❌') },
     {
       key: 'actions',
@@ -86,13 +88,13 @@ export default function AnnouncementsPage() {
 
   return (
     <main className="space-y-6">
-      <h1 className="text-2xl font-bold">공지사항 관리</h1>
+      <h1 className="text-2xl font-bold">{t('nav.announcements')}</h1>
 
       {error && <p className="text-red-600">{error}</p>}
       {loading && <p>불러오는 중...</p>}
 
       <section className="bg-white shadow rounded-2xl p-4 space-y-2">
-        <h2 className="font-medium">새 공지 작성</h2>
+        <h2 className="font-medium">{t('nav.announcements')}</h2>
         <input
           className="w-full border rounded px-3 py-2"
           placeholder="제목"
@@ -117,7 +119,7 @@ export default function AnnouncementsPage() {
           onClick={create}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          등록
+          {t('common.refresh')}
         </button>
       </section>
 
@@ -125,7 +127,7 @@ export default function AnnouncementsPage() {
         columns={columns}
         rows={rows}
         loading={loading}
-        emptyText="공지사항이 없습니다."
+        emptyText={t('table.empty')}
         rowKey={(row) => row.id}
       />
     </main>
