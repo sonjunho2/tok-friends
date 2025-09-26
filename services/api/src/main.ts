@@ -1,60 +1,32 @@
-// services/api/src/main.ts
+// tok-friends/services/api/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import helmet from 'helmet';
 
-function parseCorsOrigin(value?: string): true | string[] {
-  if (!value || value.trim() === '' || value.trim() === '*') return true;
-  return value
+function parseOrigins(env?: string): (string | RegExp)[] | boolean {
+  if (!env) return true; // 개발 편의: 모든 오리진 허용(운영은 반드시 설정)
+  const parts = env
     .split(',')
-    .map((v) => v.trim())
+    .map((s) => s.trim())
     .filter(Boolean);
+  return parts.length === 0 ? true : parts;
 }
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-    }),
-  );
-
-  const corsOrigin = parseCorsOrigin(process.env.CORS_ORIGIN);
-
+  const corsOrigins = parseOrigins(process.env.CORS_ORIGIN);
   app.enableCors({
-    origin: corsOrigin,
+    origin: corsOrigins,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
-    optionsSuccessStatus: 204, // ✅ 프리플라이트 응답 코드
-    maxAge: 86400,             // ✅ 프리플라이트 캐시(초) - 1일
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Disposition'],
   });
 
-  app.use(
-    helmet({
-      contentSecurityPolicy: false,
-      crossOriginResourcePolicy: { policy: 'cross-origin' },
-    }),
-  );
-
-  const config = new DocumentBuilder()
-    .setTitle('TokFriends API')
-    .setDescription('Friend making & chat API')
-    .setVersion('0.1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
-
-  const PORT = Number(process.env.PORT) || 3000;
-  await app.listen(PORT, '0.0.0.0');
-
-  const url = await app.getUrl();
-  console.log(`[CORS] origin =`, corsOrigin);
-  console.log(`API running on ${url} (docs: ${url.replace(/\/$/, '')}/docs)`);
+  const port = Number(process.env.PORT) || 4000;
+  await app.listen(port);
+  // eslint-disable-next-line no-console
+  console.log(`API listening on port ${port} (CORS origins: ${process.env.CORS_ORIGIN || 'ALL'})`);
 }
+
 bootstrap();
