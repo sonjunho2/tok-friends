@@ -1,4 +1,3 @@
-/services/api/src/modules/discover/discover.module.ts
 import { Module } from '@nestjs/common';
 import { PrismaModule } from 'nestjs-prisma';
 import { DiscoverService } from './discover.service';
