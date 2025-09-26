@@ -1,13 +1,12 @@
-/services/api/src/modules/discover/discover.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { Prisma } from '@prisma/client';
 
 type Filters = {
   gender?: string;
-  ageMin?: number; // 최소 나이
-  ageMax?: number; // 최대 나이
-  region?: string; // region1 또는 region2 매칭
+  ageMin?: number;
+  ageMax?: number;
+  region?: string; // region1/region2 검색용
 };
 
 function yearsAgo(base: Date, years: number) {
@@ -22,26 +21,16 @@ export class DiscoverService {
     const now = new Date();
     const where: Prisma.UserWhereInput = {};
 
-    if (filters?.gender) {
-      where.gender = filters.gender;
-    }
+    if (filters.gender) where.gender = filters.gender;
 
-    // 나이 -> 생년월일(dob) 범위로 변환
-    // ageMin 이상 => dob <= yearsAgo(ageMin)
-    // ageMax 이하 => dob >= yearsAgo(ageMax + 1)
-    if (typeof filters?.ageMin === 'number' || typeof filters?.ageMax === 'number') {
+    if (typeof filters.ageMin === 'number' || typeof filters.ageMax === 'number') {
       const dob: Prisma.DateTimeFilter = {};
-      if (typeof filters.ageMin === 'number') {
-        dob.lte = yearsAgo(now, filters.ageMin);
-      }
-      if (typeof filters.ageMax === 'number') {
-        dob.gte = yearsAgo(now, filters.ageMax + 1);
-      }
+      if (typeof filters.ageMin === 'number') dob.lte = yearsAgo(now, filters.ageMin);
+      if (typeof filters.ageMax === 'number') dob.gte = yearsAgo(now, (filters.ageMax ?? 0) + 1);
       where.dob = dob;
     }
 
-    // 지역 필터(region1 / region2 중 하나라도 포함)
-    if (filters?.region) {
+    if (filters.region) {
       where.OR = [
         { region1: { contains: filters.region } },
         { region2: { contains: filters.region } },
