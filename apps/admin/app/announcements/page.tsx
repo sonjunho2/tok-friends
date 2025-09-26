@@ -1,11 +1,19 @@
-// tok-friends/apps/admin/app/announcements/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { adminAnnouncementsApi, AnnouncementInput } from '@/lib/api';
+import { adminAnnouncementsApi, type AnnouncementInput } from '@/lib/api';
+import Table, { type Column } from '@/components/Table';
+
+type AnnouncementRow = {
+  id: string;
+  title: string;
+  body: string;
+  isActive: boolean;
+  createdAt?: string;
+};
 
 export default function AnnouncementsPage() {
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<AnnouncementRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState('');
@@ -18,7 +26,7 @@ export default function AnnouncementsPage() {
     try {
       const res = await adminAnnouncementsApi.list();
       if (res?.ok) {
-        setRows(res.data);
+        setRows(res.data as AnnouncementRow[]);
       } else {
         setError('공지사항 목록 불러오기 실패');
       }
@@ -55,6 +63,26 @@ export default function AnnouncementsPage() {
       alert(e?.message || '삭제 실패');
     }
   };
+
+  const columns: Column<AnnouncementRow>[] = [
+    { key: 'id', header: 'ID', className: 'w-24' },
+    { key: 'title', header: '제목' },
+    { key: 'body', header: '내용', className: 'max-w-[280px] truncate' },
+    { key: 'isActive', header: '활성화', render: (a) => (a.isActive ? '✅' : '❌') },
+    {
+      key: 'actions',
+      header: '액션',
+      className: 'w-28',
+      render: (a) => (
+        <button
+          onClick={() => remove(a.id)}
+          className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+        >
+          삭제
+        </button>
+      ),
+    },
+  ];
 
   return (
     <main className="space-y-6">
@@ -93,27 +121,13 @@ export default function AnnouncementsPage() {
         </button>
       </section>
 
-      <section className="grid grid-cols-1 gap-3">
-        {rows.map((a) => (
-          <div key={a.id} className="bg-white shadow rounded-2xl p-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold">{a.title}</h3>
-                <p className="text-sm text-slate-600">{a.body}</p>
-                <p className="text-xs text-gray-500">
-                  {a.isActive ? '활성화' : '비활성화'}
-                </p>
-              </div>
-              <button
-                onClick={() => remove(a.id)}
-                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-              >
-                삭제
-              </button>
-            </div>
-          </div>
-        ))}
-      </section>
+      <Table<AnnouncementRow>
+        columns={columns}
+        rows={rows}
+        loading={loading}
+        emptyText="공지사항이 없습니다."
+        rowKey={(row) => row.id}
+      />
     </main>
   );
 }
