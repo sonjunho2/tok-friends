@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { adminUsersApi, adminBlocksApi } from '@/lib/api';
 import Table, { Column } from '@/components/Table';
+import { useI18n } from '@/i18n';
 
 type UserRow = {
   id: string;
@@ -13,6 +14,7 @@ type UserRow = {
 };
 
 export default function UsersPage() {
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
@@ -33,10 +35,10 @@ export default function UsersPage() {
         setRows((data.items ?? data.data) as UserRow[]);
         setTotal(data.total ?? (data.items ? (data.items.length + (page - 1) * limit) : 0));
       } else {
-        setError('목록을 불러올 수 없습니다.');
+        setError(t('table.empty'));
       }
     } catch (e: any) {
-      setError(e?.message || '에러 발생');
+      setError(e?.message || 'Error');
     } finally {
       setLoading(false);
     }
@@ -75,8 +77,8 @@ export default function UsersPage() {
 
   const columns: Column<UserRow>[] = [
     { key: 'id', header: 'ID' },
-    { key: 'displayName', header: '닉네임' },
-    { key: 'email', header: '이메일' },
+    { key: 'displayName', header: t('nav.users') },
+    { key: 'email', header: 'Email' },
     { key: 'status', header: '상태' },
     {
       key: 'actions',
@@ -88,7 +90,7 @@ export default function UsersPage() {
             disabled={actingId === u.id}
             className="px-2 py-1 rounded bg-green-600 text-white text-sm hover:bg-green-700 disabled:opacity-50"
           >
-            활성화
+            {t('common.refresh')}
           </button>
           <button
             onClick={() => updateStatus(u.id, 'suspended')}
@@ -102,7 +104,7 @@ export default function UsersPage() {
             disabled={actingId === u.id}
             className="px-2 py-1 rounded bg-red-600 text-white text-sm hover:bg-red-700 disabled:opacity-50"
           >
-            차단(데모)
+            차단
           </button>
         </div>
       ),
@@ -111,12 +113,12 @@ export default function UsersPage() {
 
   return (
     <main className="space-y-4">
-      <h1 className="text-2xl font-bold">유저 검색/관리</h1>
+      <h1 className="text-2xl font-bold">{t('nav.users')}</h1>
 
       <section className="bg-white rounded-2xl shadow p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <input
           className="border rounded px-3 py-2 md:col-span-3"
-          placeholder="이메일/닉네임/ID 검색"
+          placeholder="검색"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -125,7 +127,7 @@ export default function UsersPage() {
           onClick={() => { setPage(1); load(); }}
           disabled={loading}
         >
-          {loading ? '불러오는 중...' : '검색'}
+          {t('common.refresh')}
         </button>
       </section>
 
@@ -135,7 +137,7 @@ export default function UsersPage() {
         columns={columns}
         rows={rows}
         loading={loading}
-        emptyText="결과가 없습니다."
+        emptyText={t('table.empty')}
         rowKey={(row) => row.id}
       />
 
@@ -159,5 +161,3 @@ export default function UsersPage() {
     </main>
   );
 }
-
-    
