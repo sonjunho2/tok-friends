@@ -12,12 +12,12 @@ export class DiscoverController {
   @ApiQuery({ name: 'gender', required: false, type: String })
   @ApiQuery({ name: 'ageMin', required: false, type: Number })
   @ApiQuery({ name: 'ageMax', required: false, type: Number })
-  @ApiQuery({ name: 'city', required: false, type: String })
+  @ApiQuery({ name: 'region', required: false, type: String })
   async list(
     @Query('gender') gender?: string,
-    @Query('ageMin') ageMin?: number,
-    @Query('ageMax') ageMax?: number,
-    @Query('city') city?: string,
+    @Query('ageMin') ageMin?: string,
+    @Query('ageMax') ageMax?: string,
+    @Query('region') region?: string,
   ) {
     return {
       ok: true,
@@ -25,7 +25,7 @@ export class DiscoverController {
         gender,
         ageMin: ageMin ? Number(ageMin) : undefined,
         ageMax: ageMax ? Number(ageMax) : undefined,
-        city,
+        region,
       }),
     };
   }
