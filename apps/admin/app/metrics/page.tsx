@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { metricsApi } from '@/lib/api';
 import Table, { type Column } from '@/components/Table';
+import { useI18n } from '@/i18n';
 
 type MetricRow = {
   key: string;
@@ -10,6 +11,7 @@ type MetricRow = {
 };
 
 export default function MetricsPage() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<MetricRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -23,10 +25,10 @@ export default function MetricsPage() {
         const data = res.data as Record<string, number>;
         setRows(Object.entries(data).map(([k, v]) => ({ key: k, value: v })));
       } else {
-        setError('메트릭스를 불러오지 못했습니다.');
+        setError(t('table.empty'));
       }
     } catch (e: any) {
-      setError(e?.message || '에러 발생');
+      setError(e?.message || 'Error');
     } finally {
       setLoading(false);
     }
@@ -34,29 +36,30 @@ export default function MetricsPage() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const columns: Column<MetricRow>[] = [
-    { key: 'key', header: '항목' },
-    { key: 'value', header: '값' },
+    { key: 'key', header: t('nav.metrics') },
+    { key: 'value', header: t('common.refresh') /* 표 헤더 예시로 임시 사용 */ },
   ];
 
   return (
     <main className="space-y-4">
-      <h1 className="text-2xl font-bold">메트릭스 요약</h1>
+      <h1 className="text-2xl font-bold">{t('nav.metrics')}</h1>
       {error && <p className="text-red-600">{error}</p>}
       <Table<MetricRow>
         columns={columns}
         rows={rows}
         loading={loading}
-        emptyText="데이터 없음"
+        emptyText={t('table.empty')}
         rowKey={(r) => r.key}
       />
       <button
         onClick={fetchData}
         className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
       >
-        새로고침
+        {t('common.refresh')}
       </button>
     </main>
   );
