@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { adminReportsApi, adminBlocksApi, type ReportStatus } from '@/lib/api';
+import Table, { type Column } from '@/components/Table';
 
 type ReportRow = {
   id: number | string;
@@ -37,7 +38,6 @@ export default function ReviewPage() {
       });
       const data = res as any;
       if (data?.ok) {
-        // 게시글 관련(포스트 신고)만 노출
         const onlyPosts = (data.data as ReportRow[]).filter((r) => !!r.postId);
         setRows(onlyPosts);
       } else {
@@ -73,8 +73,6 @@ export default function ReviewPage() {
     setActing(reportedId);
     setError(null);
     try {
-      // 관리자 정책에 따라 actor(userId)는 관리 시스템상 별도 주체가 될 수 있으나
-      // 여기서는 간단히 reportedId를 차단의 대상/작성자로 데모 호출
       await adminBlocksApi.create(reportedId, reportedId);
       alert('차단 완료(데모)');
     } catch (e: any) {
@@ -83,6 +81,54 @@ export default function ReviewPage() {
       setActing(null);
     }
   };
+
+  const columns: Column<ReportRow>[] = [
+    { key: 'id', header: 'ID', className: 'w-24' },
+    { key: 'reporterId', header: '신고자' },
+    { key: 'reportedId', header: '피신고자' },
+    { key: 'postId', header: '포스트' },
+    { key: 'reason', header: '사유', className: 'max-w-[280px] truncate' },
+    { key: 'status', header: '상태', className: 'w-28' },
+    {
+      key: 'actions',
+      header: '액션',
+      className: 'w-[280px]',
+      render: (r) => (
+        <div className="flex flex-wrap gap-2">
+          {r.status !== 'REVIEWING' && (
+            <button
+              onClick={() => changeStatus(r.id, 'REVIEWING')}
+              disabled={acting === r.id}
+              className="px-2 py-1 rounded bg-amber-600 text-white text-sm hover:bg-amber-700 disabled:opacity-50"
+            >
+              검토중
+            </button>
+          )}
+          <button
+            onClick={() => changeStatus(r.id, 'RESOLVED')}
+            disabled={acting === r.id}
+            className="px-2 py-1 rounded bg-green-600 text-white text-sm hover:bg-green-700 disabled:opacity-50"
+          >
+            승인(처리)
+          </button>
+          <button
+            onClick={() => changeStatus(r.id, 'REJECTED')}
+            disabled={acting === r.id}
+            className="px-2 py-1 rounded bg-red-600 text-white text-sm hover:bg-red-700 disabled:opacity-50"
+          >
+            반려
+          </button>
+          <button
+            onClick={() => blockReported(r.reportedId)}
+            disabled={acting === r.reportedId}
+            className="px-2 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
+          >
+            빠른 차단
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <main className="space-y-4">
@@ -115,57 +161,13 @@ export default function ReviewPage() {
 
       {error && <div className="text-red-600">{error}</div>}
 
-      <section className="bg-white rounded-2xl shadow divide-y">
-        {rows.length === 0 && !loading && (
-          <div className="p-4 text-gray-500">검수할 항목이 없습니다.</div>
-        )}
-        {rows.map((r) => (
-          <div key={r.id} className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="font-semibold">신고 #{String(r.id)} · 상태 {r.status}</div>
-              <div className="text-sm text-gray-500">생성일: {r.createdAt ?? '-'}</div>
-            </div>
-            <div className="text-sm text-gray-700">
-              신고자: {r.reporterId ?? '-'} · 피신고자: {r.reportedId ?? '-'} · 포스트ID: {r.postId ?? '-'}
-            </div>
-            {r.reason && <div className="text-sm">사유: {r.reason}</div>}
-
-            <div className="flex gap-2">
-              {r.status !== 'REVIEWING' && (
-                <button
-                  onClick={() => changeStatus(r.id, 'REVIEWING')}
-                  disabled={acting === r.id}
-                  className="px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
-                >
-                  검토중
-                </button>
-              )}
-              <button
-                onClick={() => changeStatus(r.id, 'RESOLVED')}
-                disabled={acting === r.id}
-                className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
-              >
-                승인(처리)
-              </button>
-              <button
-                onClick={() => changeStatus(r.id, 'REJECTED')}
-                disabled={acting === r.id}
-                className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                반려
-              </button>
-              <button
-                onClick={() => blockReported(r.reportedId)}
-                disabled={acting === r.reportedId}
-                className="px-3 py-1 rounded bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50"
-                title="피신고자 빠른 차단(데모)"
-              >
-                빠른 차단
-              </button>
-            </div>
-          </div>
-        ))}
-      </section>
+      <Table<ReportRow>
+        columns={columns}
+        rows={rows}
+        loading={loading}
+        emptyText="검수할 항목이 없습니다."
+        rowKey={(row) => row.id}
+      />
     </main>
   );
 }
