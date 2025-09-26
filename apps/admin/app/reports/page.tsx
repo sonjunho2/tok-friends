@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { adminReportsApi, type ReportStatus } from '@/lib/api';
+import Table, { type Column } from '@/components/Table';
 
 type Row = {
   id: number | string;
@@ -43,8 +44,9 @@ export default function ReportsPage() {
         page: 1,
         limit: 20,
       });
-      if ((res as any)?.ok) {
-        setRows((res as any).data as Row[]);
+      const data = res as any;
+      if (data?.ok) {
+        setRows(data.data as Row[]);
       } else {
         setError('목록을 불러올 수 없습니다.');
       }
@@ -73,9 +75,54 @@ export default function ReportsPage() {
     }
   };
 
+  const columns: Column<Row>[] = [
+    { key: 'id', header: 'ID', className: 'w-24' },
+    { key: 'reporterId', header: '신고자' },
+    { key: 'reportedId', header: '피신고자' },
+    { key: 'postId', header: '포스트' },
+    { key: 'reason', header: '사유', className: 'max-w-[280px] truncate' },
+    { key: 'status', header: '상태', className: 'w-28' },
+    {
+      key: 'actions',
+      header: '액션',
+      className: 'w-[260px]',
+      render: (r) => (
+        <div className="flex flex-wrap gap-2">
+          {r.status !== 'REVIEWING' && (
+            <button
+              onClick={() => changeStatus(r.id, 'REVIEWING')}
+              disabled={acting === r.id}
+              className="px-2 py-1 rounded bg-amber-600 text-white text-sm hover:bg-amber-700 disabled:opacity-50"
+            >
+              검토중
+            </button>
+          )}
+          {r.status !== 'RESOLVED' && (
+            <button
+              onClick={() => changeStatus(r.id, 'RESOLVED')}
+              disabled={acting === r.id}
+              className="px-2 py-1 rounded bg-green-600 text-white text-sm hover:bg-green-700 disabled:opacity-50"
+            >
+              처리완료
+            </button>
+          )}
+          {r.status !== 'REJECTED' && (
+            <button
+              onClick={() => changeStatus(r.id, 'REJECTED')}
+              disabled={acting === r.id}
+              className="px-2 py-1 rounded bg-red-600 text-white text-sm hover:bg-red-700 disabled:opacity-50"
+            >
+              반려
+            </button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <main className="space-y-4">
-      <h1 className="text-2xl font-bold">신고 관리</h1>
+      <h1 className="text-2xl font-bold">{title}</h1>
 
       <section className="bg-white rounded-2xl shadow p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <select
@@ -104,51 +151,13 @@ export default function ReportsPage() {
 
       {error && <div className="text-red-600">{error}</div>}
 
-      <section className="bg-white rounded-2xl shadow divide-y">
-        {rows.length === 0 && !loading && (
-          <div className="p-4 text-gray-500">결과가 없습니다.</div>
-        )}
-        {rows.map((r) => (
-          <div key={r.id} className="p-4 flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <div className="font-semibold">#{String(r.id)} · {r.status}</div>
-              <div className="text-sm text-gray-600">
-                신고자: {r.reporterId ?? '-'} · 피신고자: {r.reportedId ?? '-'} · 포스트: {r.postId ?? '-'}
-              </div>
-              {r.reason && <div className="text-sm mt-1">{r.reason}</div>}
-            </div>
-            <div className="flex gap-2">
-              {status !== 'REVIEWING' && (
-                <button
-                  onClick={() => changeStatus(r.id, 'REVIEWING')}
-                  disabled={acting === r.id}
-                  className="px-3 py-1 rounded bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
-                >
-                  검토중
-                </button>
-              )}
-              {status !== 'RESOLVED' && (
-                <button
-                  onClick={() => changeStatus(r.id, 'RESOLVED')}
-                  disabled={acting === r.id}
-                  className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
-                >
-                  처리완료
-                </button>
-              )}
-              {status !== 'REJECTED' && (
-                <button
-                  onClick={() => changeStatus(r.id, 'REJECTED')}
-                  disabled={acting === r.id}
-                  className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-                >
-                  반려
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </section>
+      <Table<Row>
+        columns={columns}
+        rows={rows}
+        loading={loading}
+        emptyText="결과가 없습니다."
+        rowKey={(row) => row.id}
+      />
     </main>
   );
 }
