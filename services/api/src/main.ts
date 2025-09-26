@@ -1,32 +1,37 @@
-// tok-friends/services/api/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
-function parseOrigins(env?: string): (string | RegExp)[] | boolean {
-  if (!env) return true; // 개발 편의: 모든 오리진 허용(운영은 반드시 설정)
-  const parts = env
+function parseOrigins(env?: string): (string | RegExp)[] {
+  if (!env) return ['*'];
+  return env
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
-  return parts.length === 0 ? true : parts;
 }
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const corsOrigins = parseOrigins(process.env.CORS_ORIGIN);
+  const port = Number(process.env.PORT ?? 4000);
+  const origins = parseOrigins(process.env.CORS_ORIGIN);
+
   app.enableCors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      // 서버간 통신/헬스체크 등 Origin 없는 요청 허용
+      if (!origin) return callback(null, true);
+      if (origins.includes('*')) return callback(null, true);
+      if (origins.some((o) => o === origin)) return callback(null, true);
+      callback(new Error(`CORS blocked: ${origin}`), false);
+    },
     credentials: true,
-    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    exposedHeaders: ['Content-Disposition'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: [],
+    maxAge: 600,
   });
 
-  const port = Number(process.env.PORT) || 4000;
   await app.listen(port);
   // eslint-disable-next-line no-console
-  console.log(`API listening on port ${port} (CORS origins: ${process.env.CORS_ORIGIN || 'ALL'})`);
+  console.log(`API listening on :${port}`);
 }
-
 bootstrap();
