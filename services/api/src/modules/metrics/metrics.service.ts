@@ -6,14 +6,13 @@ export class MetricsService {
   constructor(private prisma: PrismaService) {}
 
   async getSummary() {
-    const [users, posts, chats, reports, announcements] = await Promise.all([
+    const [users, posts, chats, reports, announcements, bannedWords] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.post.count(),
       this.prisma.chat.count(),
       this.prisma.report.count(),
-      this.prisma.announcement.count({
-        where: { isActive: true },
-      }),
+      this.prisma.announcement.count({ where: { isActive: true } }),
+      this.prisma.bannedWord.count(),
     ]);
 
     return {
@@ -22,6 +21,7 @@ export class MetricsService {
       chats,
       reports,
       activeAnnouncements: announcements,
+      bannedWords,
     };
   }
 }
