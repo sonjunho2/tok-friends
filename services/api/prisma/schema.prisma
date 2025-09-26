@@ -225,6 +225,11 @@ model Announcement {
   endsAt    DateTime?
   createdAt DateTime @default(now())
 }
+model BannedWord {
+  id        String   @id @default(cuid())
+  word      String   @unique
+  createdAt DateTime @default(now())
+}
 
 enum ReportStatus {
   PENDING
