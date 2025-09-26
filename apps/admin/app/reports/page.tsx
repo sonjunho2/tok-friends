@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { adminReportsApi, type ReportStatus } from '@/lib/api';
 import Table, { type Column } from '@/components/Table';
+import { useI18n } from '@/i18n';
 
 type Row = {
   id: number | string;
@@ -17,6 +18,7 @@ type Row = {
 const STATUSES: ReportStatus[] = ['PENDING', 'REVIEWING', 'RESOLVED', 'REJECTED'];
 
 export default function ReportsPage() {
+  const { t } = useI18n();
   const [status, setStatus] = useState<ReportStatus>('PENDING');
   const [search, setSearch] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
@@ -26,13 +28,13 @@ export default function ReportsPage() {
 
   const title = useMemo(() => {
     switch (status) {
-      case 'PENDING': return '대기 중 신고';
-      case 'REVIEWING': return '검토 중 신고';
-      case 'RESOLVED': return '처리 완료';
-      case 'REJECTED': return '반려됨';
-      default: return '신고';
+      case 'PENDING': return t('nav.reports') + ' (대기)';
+      case 'REVIEWING': return t('nav.reports') + ' (검토중)';
+      case 'RESOLVED': return t('nav.reports') + ' (완료)';
+      case 'REJECTED': return t('nav.reports') + ' (반려)';
+      default: return t('nav.reports');
     }
-  }, [status]);
+  }, [status, t]);
 
   const load = async () => {
     setLoading(true);
@@ -48,10 +50,10 @@ export default function ReportsPage() {
       if (data?.ok) {
         setRows(data.data as Row[]);
       } else {
-        setError('목록을 불러올 수 없습니다.');
+        setError(t('table.empty'));
       }
     } catch (e: any) {
-      setError(e?.message || '에러 발생');
+      setError(e?.message || 'Error');
     } finally {
       setLoading(false);
     }
@@ -76,16 +78,15 @@ export default function ReportsPage() {
   };
 
   const columns: Column<Row>[] = [
-    { key: 'id', header: 'ID', className: 'w-24' },
+    { key: 'id', header: 'ID' },
     { key: 'reporterId', header: '신고자' },
     { key: 'reportedId', header: '피신고자' },
     { key: 'postId', header: '포스트' },
-    { key: 'reason', header: '사유', className: 'max-w-[280px] truncate' },
-    { key: 'status', header: '상태', className: 'w-28' },
+    { key: 'reason', header: '사유' },
+    { key: 'status', header: '상태' },
     {
       key: 'actions',
       header: '액션',
-      className: 'w-[260px]',
       render: (r) => (
         <div className="flex flex-wrap gap-2">
           {r.status !== 'REVIEWING' && (
@@ -103,7 +104,7 @@ export default function ReportsPage() {
               disabled={acting === r.id}
               className="px-2 py-1 rounded bg-green-600 text-white text-sm hover:bg-green-700 disabled:opacity-50"
             >
-              처리완료
+              완료
             </button>
           )}
           {r.status !== 'REJECTED' && (
@@ -136,7 +137,7 @@ export default function ReportsPage() {
         </select>
         <input
           className="border rounded px-3 py-2 md:col-span-2"
-          placeholder="검색(이메일/닉네임/ID 등)"
+          placeholder="검색"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -145,7 +146,7 @@ export default function ReportsPage() {
           onClick={load}
           disabled={loading}
         >
-          {loading ? '불러오는 중...' : '검색'}
+          {t('common.refresh')}
         </button>
       </section>
 
@@ -155,7 +156,7 @@ export default function ReportsPage() {
         columns={columns}
         rows={rows}
         loading={loading}
-        emptyText="결과가 없습니다."
+        emptyText={t('table.empty')}
         rowKey={(row) => row.id}
       />
     </main>
