@@ -1,29 +1,10 @@
 import './globals.css';
 import React from 'react';
-import { I18nProvider, useI18n } from '@/i18n';
+import { I18nProvider } from '@/i18n';
+import HeaderActions from '@/components/HeaderActions';
 import { redirect } from 'next/navigation';
 
 const ADMIN_JWT_STORAGE_KEY = 'tokfriends.admin.jwt';
-
-function LocaleSwitcher() {
-  const { locale, setLocale } = useI18n();
-  return (
-    <div className="flex gap-2 text-sm">
-      <button
-        onClick={() => setLocale('ko')}
-        className={`px-2 py-1 rounded ${locale === 'ko' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-      >
-        한국어
-      </button>
-      <button
-        onClick={() => setLocale('en')}
-        className={`px-2 py-1 rounded ${locale === 'en' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-      >
-        English
-      </button>
-    </div>
-  );
-}
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   if (typeof window !== 'undefined') {
@@ -47,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="mx-auto max-w-6xl p-6 space-y-4">
               <header className="flex justify-between items-center">
                 <h1 className="text-lg font-bold">TokFriends Admin</h1>
-                <LocaleSwitcher />
+                <HeaderActions />
               </header>
               {children}
             </div>
