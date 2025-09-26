@@ -1,4 +1,4 @@
-// services/api/src/app.module.ts
+/services/api/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from 'nestjs-prisma';
@@ -12,6 +12,7 @@ import { AnnouncementsModule } from './modules/announcements/announcements.modul
 import { PostsModule } from './modules/posts/posts.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/jwt.guard';
+import { FriendshipsModule } from './modules/friendships/friendships.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { JwtAuthGuard } from './modules/auth/jwt.guard';
     MetricsModule,
     AnnouncementsModule,
     PostsModule,
+    FriendshipsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
