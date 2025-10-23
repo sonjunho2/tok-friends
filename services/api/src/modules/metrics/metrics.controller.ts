@@ -15,4 +15,12 @@ export class MetricsController {
       data: await this.metricsService.getSummary(),
     };
   }
+
+  @Get('dashboard')
+  async getDashboard() {
+    return {
+      ok: true,
+      data: await this.metricsService.getDashboard(),
+    };
+  }
 }
