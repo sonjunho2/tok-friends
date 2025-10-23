@@ -16,6 +16,12 @@ import { PrismaService } from 'nestjs-prisma';
 
 type AdminUserNoteDto = { note: string; authorId?: string };
 type AdminUserActionDto = { reason?: string; performedBy?: string; metadata?: Record<string, any> };
+type ProfileVisibilitySettings = {
+  marketingOptIn?: boolean;
+  verified?: boolean;
+  subscriptionPlan?: string;
+  [key: string]: unknown;
+};
 
 @ApiTags('admin/users')
 @ApiBearerAuth()
@@ -257,13 +263,15 @@ export class AdminUsersController {
 
     const existingProfile = await this.prisma.profile.findUnique({
       where: { userId: id },
-      select: { nickname: true, badges: true, interests: true, visibility: true },
+      select: { nickname: true, bio: true, badges: true, interests: true, visibility: true },
     });
 
-    const profileVisibility =
-      (existingProfile?.visibility && typeof existingProfile.visibility === 'object'
-        ? { ...existingProfile.visibility }
-        : {}) ?? {};
+    const profileVisibility: ProfileVisibilitySettings =
+      existingProfile?.visibility &&
+      typeof existingProfile.visibility === 'object' &&
+      !Array.isArray(existingProfile.visibility)
+        ? { ...(existingProfile.visibility as Record<string, unknown>) }
+        : {};
 
     const marketingOptIn = this.normalizeBoolean(body.marketingOptIn);
     const verified = this.normalizeBoolean(body.verified);
@@ -280,29 +288,37 @@ export class AdminUsersController {
     }
 
     const profileUpdate: Prisma.ProfileUpdateInput = {};
-
+    let nextNickname: string | undefined;
+    let nextBio: string | null | undefined;
+    let nextInterests: string[] | undefined;
+    let nextBadges: string[] | undefined;
+    
     if (body.nickname !== undefined || body.displayName !== undefined) {
-      profileUpdate.nickname =
-        body.nickname?.trim() ??
-        body.displayName?.trim() ??
+      nextNickname =
+        (typeof body.nickname === 'string' ? body.nickname.trim() : undefined) ??
+        (typeof body.displayName === 'string' ? body.displayName.trim() : undefined) ??
         existingProfile?.nickname ??
         '회원';
+          profileUpdate.nickname = nextNickname;
     }
 
     if (body.bio !== undefined) {
-      profileUpdate.bio = body.bio?.trim() ?? null;
+      nextBio = typeof body.bio === 'string' ? body.bio.trim() : null;
+      profileUpdate.bio = nextBio;
     }
 
     if (body.interests !== undefined) {
-      profileUpdate.interests = Array.isArray(body.interests)
+      nextInterests = Array.isArray(body.interests)
         ? body.interests.map((tag: any) => String(tag).trim()).filter((tag) => tag.length > 0)
         : existingProfile?.interests ?? [];
+          profileUpdate.interests = nextInterests;
     }
 
     if (body.badges !== undefined) {
-      profileUpdate.badges = Array.isArray(body.badges)
+      nextBadges = Array.isArray(body.badges)
         ? body.badges.map((badge: any) => String(badge).trim()).filter((badge) => badge.length > 0)
         : existingProfile?.badges ?? [];
+          profileUpdate.badges = nextBadges;
     }
 
     if (
@@ -310,7 +326,7 @@ export class AdminUsersController {
       verified !== undefined ||
       subscriptionPlan !== undefined
     ) {
-      profileUpdate.visibility = profileVisibility as any;
+      profileUpdate.visibility = profileVisibility as Prisma.InputJsonValue;
     }
 
     const userUpdate: Prisma.UserUpdateInput = {};
@@ -346,20 +362,16 @@ export class AdminUsersController {
           update: profileUpdate,
           create: {
             nickname:
-              (profileUpdate.nickname as string | undefined) ??
+              nextNickname ??
               existingProfile?.nickname ??
-              body.displayName?.trim() ??
+              (typeof body.displayName === 'string' ? body.displayName.trim() : undefined) ??
               '회원',
-            bio: profileUpdate.bio ?? null,
-            interests:
-              (profileUpdate.interests as string[] | undefined) ??
-              existingProfile?.interests ??
-              [],
-            badges:
-              (profileUpdate.badges as string[] | undefined) ??
-              existingProfile?.badges ??
-              [],
-            visibility: Object.keys(profileVisibility).length ? (profileVisibility as any) : undefined,
+            bio: nextBio ?? existingProfile?.bio ?? null,
+            interests: nextInterests ?? existingProfile?.interests ?? [],
+            badges: nextBadges ?? existingProfile?.badges ?? [],
+            visibility: Object.keys(profileVisibility).length
+              ? (profileVisibility as Prisma.InputJsonValue)
+              : undefined,
           },
         },
       };
