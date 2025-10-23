@@ -1,11 +1,14 @@
 import { Controller, Get } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
+import { HealthService } from './health.service';
 
 @Controller('health')
 export class HealthController {
+    constructor(private readonly health: HealthService) {}
+
   @Public()
   @Get()
-  ok() {
-    return { ok: true, ts: new Date().toISOString() };
+  async ok() {
+    return this.health.check();
   }
 }
