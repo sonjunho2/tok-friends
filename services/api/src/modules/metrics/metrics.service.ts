@@ -2,17 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { ReportStatus } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 
+type DashboardCardComparison = {
+  direction: 'up' | 'down' | 'flat';
+  absolute: number;
+  percentage: number | null;
+};
+
 type DashboardCard = {
   id: string;
   title: string;
   value: number;
   unit?: string;
   hint?: string;
-  comparison?: {
-    direction: 'up' | 'down' | 'flat';
-    absolute: number;
-    percentage: number | null;
-  };
+  comparison?: DashboardCardComparison;
 };
 
 type DashboardSection = {
@@ -65,6 +67,15 @@ export class MetricsService {
     const since24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const since7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+        const countActiveSenders = (since: Date) =>
+      this.prisma.message
+        .findMany({
+          where: { createdAt: { gte: since } },
+          distinct: ['senderId'],
+          select: { senderId: true },
+        })
+        .then((rows) => rows.length);
+
     const [
       newUsers24h,
       newUsers7d,
@@ -83,8 +94,8 @@ export class MetricsService {
     ] = await Promise.all([
       this.prisma.user.count({ where: { createdAt: { gte: since24h } } }),
       this.prisma.user.count({ where: { createdAt: { gte: since7d } } }),
-      this.prisma.message.count({ where: { createdAt: { gte: since24h } }, distinct: ['senderId'] }),
-      this.prisma.message.count({ where: { createdAt: { gte: since7d } }, distinct: ['senderId'] }),
+      countActiveSenders(since24h),
+      countActiveSenders(since7d),
       this.prisma.post.count({ where: { createdAt: { gte: since24h } } }),
       this.prisma.post.count({ where: { createdAt: { gte: since7d } } }),
       this.prisma.chat.count({ where: { lastMessageAt: { gte: since24h } } }),
@@ -201,8 +212,8 @@ export class MetricsService {
     return payload;
   }
 
-  private delta(current: number, baseline?: number) {
-    if (!baseline || Number.isNaN(baseline)) {
+  private delta(current: number, baseline?: number): DashboardCardComparison {
+    if (baseline === undefined || Number.isNaN(baseline)) {
       return { direction: 'flat', absolute: 0, percentage: null };
     }
     const diff = current - baseline;
