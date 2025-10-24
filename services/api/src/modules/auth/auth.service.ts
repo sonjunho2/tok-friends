@@ -1,14 +1,75 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import * as argon2 from 'argon2';
 import { sign as jwtSign } from 'jsonwebtoken';
-import { EmailSignupDto } from './dto/email-signup.dto';
-import { EmailLoginDto } from './dto/email-login.dto';
-import { AppleTokenDto } from './dto/apple-token.dto';
+import { randomInt, createHash } from 'crypto';
+import { Prisma } from '@prisma/client';
+import {
+  EmailSignupDto,
+  EmailLoginDto,
+  AppleTokenDto,
+  PhoneRequestOtpDto,
+  PhoneVerifyDto,
+  CompletePhoneProfileDto,
+} from './dto';
+
+const OTP_EXPIRY_SECONDS = 180;
 
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService) {}
+
+    private normalizePhone(phone: string) {
+    return phone.replace(/[^\d]/g, '');
+  }
+
+  private normalizeCountryCode(countryCode?: string) {
+    return (countryCode || 'KR').trim().toUpperCase();
+  }
+
+  private formatPhoneKey(phone: string, countryCode?: string) {
+    const digits = this.normalizePhone(phone);
+    if (!digits) {
+      throw new BadRequestException('Invalid phone number');
+    }
+    const cc = this.normalizeCountryCode(countryCode);
+    return { digits, countryCode: cc };
+  }
+
+  private hashPhone(phone: string, countryCode?: string) {
+    const { digits, countryCode: cc } = this.formatPhoneKey(phone, countryCode);
+    return createHash('sha256').update(`${cc}:${digits}`).digest('hex');
+  }
+
+  private generateOtpCode() {
+    return randomInt(100000, 1_000_000).toString().padStart(6, '0');
+  }
+
+  private async serializeAuthUser(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        provider: true,
+        pointsBalance: true,
+        profile: {
+          select: {
+            nickname: true,
+            bio: true,
+            headline: true,
+            avatarUri: true,
+          },
+        },
+      },
+    });
+  }
 
   private getJwtSecret(): string {
     const secret = process.env.JWT_SECRET;
@@ -76,5 +137,211 @@ export class AuthService {
 
   async loginApple(_dto: AppleTokenDto) {
     throw new BadRequestException('Apple login not implemented yet');
+  }
+
+  async requestPhoneOtp(dto: PhoneRequestOtpDto) {
+    const { digits, countryCode } = this.formatPhoneKey(dto.phone, dto.countryCode);
+
+    const code = this.generateOtpCode();
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000);
+
+    await this.prisma.phoneVerification.deleteMany({
+      where: {
+        phone: digits,
+        countryCode,
+        verifiedAt: null,
+        expiresAt: { lt: new Date(Date.now() - 3600 * 1000) },
+      },
+    });
+
+    const record = await this.prisma.phoneVerification.create({
+      data: {
+        phone: digits,
+        countryCode,
+        codeHash: await argon2.hash(code),
+        expiresAt,
+      },
+      select: { id: true },
+    });
+
+    const response: Record<string, any> = {
+      requestId: record.id,
+      expiresIn: OTP_EXPIRY_SECONDS,
+    };
+
+    if (process.env.NODE_ENV !== 'production') {
+      response.debugCode = code;
+    }
+
+    return response;
+  }
+
+  async verifyPhoneOtp(dto: PhoneVerifyDto) {
+    const digits = this.normalizePhone(dto.phone);
+    if (!digits) {
+      throw new BadRequestException('Invalid phone number');
+    }
+
+    const request = await this.prisma.phoneVerification.findUnique({
+      where: { id: dto.requestId },
+    });
+
+    if (!request || request.phone !== digits) {
+      throw new BadRequestException('Invalid verification request');
+    }
+
+    if (request.expiresAt.getTime() < Date.now()) {
+      throw new BadRequestException('Verification code expired');
+    }
+
+    if (request.attempts >= 5) {
+      throw new BadRequestException('Too many verification attempts');
+    }
+
+    if (!(await argon2.verify(request.codeHash, dto.code))) {
+      await this.prisma.phoneVerification.update({
+        where: { id: request.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new UnauthorizedException('Invalid verification code');
+    }
+
+    const verificationUpdate: Prisma.PhoneVerificationUpdateInput = {};
+    if (!request.verifiedAt) {
+      verificationUpdate.verifiedAt = new Date();
+    }
+
+    const phoneHash = this.hashPhone(digits, request.countryCode);
+
+    let resolvedUserId: string | null = request.userId ?? null;
+    if (!resolvedUserId) {
+      const existing = await this.prisma.user.findFirst({
+        where: { phoneHash },
+        select: { id: true },
+      });
+      resolvedUserId = existing?.id ?? null;
+    }
+
+    if (resolvedUserId) {
+      verificationUpdate.user = { connect: { id: resolvedUserId } };
+      verificationUpdate.completedAt = request.completedAt ?? new Date();
+
+      await this.prisma.phoneVerification.update({
+        where: { id: request.id },
+        data: verificationUpdate,
+      });
+
+      const token = this.makeToken({ sub: resolvedUserId });
+      const user = await this.serializeAuthUser(resolvedUserId);
+      return { token, user };
+    }
+
+    await this.prisma.phoneVerification.update({
+      where: { id: request.id },
+      data: verificationUpdate,
+    });
+
+    return { needsProfile: true, verificationId: request.id };
+  }
+
+  async completePhoneProfile(dto: CompletePhoneProfileDto) {
+    const digits = this.normalizePhone(dto.phone);
+    if (!digits) {
+      throw new BadRequestException('Invalid phone number');
+    }
+
+    const request = await this.prisma.phoneVerification.findUnique({
+      where: { id: dto.verificationId },
+    });
+
+    if (!request || request.phone !== digits) {
+      throw new BadRequestException('Invalid verification request');
+    }
+
+    if (!request.verifiedAt || request.expiresAt.getTime() < Date.now()) {
+      throw new BadRequestException('Verification has expired');
+    }
+
+    if (request.completedAt && request.userId) {
+      const token = this.makeToken({ sub: request.userId });
+      const user = await this.serializeAuthUser(request.userId);
+      return { token, user };
+    }
+
+    const phoneHash = this.hashPhone(digits, request.countryCode);
+
+    const existing = await this.prisma.user.findFirst({
+      where: { phoneHash },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await this.prisma.phoneVerification.update({
+        where: { id: request.id },
+        data: {
+          user: { connect: { id: existing.id } },
+          completedAt: new Date(),
+        },
+      });
+      const token = this.makeToken({ sub: existing.id });
+      const user = await this.serializeAuthUser(existing.id);
+      return { token, user };
+    }
+
+    const dob = new Date(Date.UTC(dto.birthYear, 0, 1));
+    const region = (dto.region ?? '').trim();
+    const [region1, ...restRegion] = region ? region.split(/\s+/) : [''];
+    const region2 = restRegion.join(' ').trim();
+
+    const nickname = dto.nickname.trim();
+    const headline = dto.headline?.trim();
+    const bio = dto.bio?.trim();
+    const avatarUri = dto.avatarUri?.trim();
+
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            provider: 'phone',
+            phoneHash,
+            displayName: nickname,
+            dob,
+            gender: dto.gender,
+            region1: region1 || null,
+            region2: region2 ? region2 : null,
+            profile: {
+              create: {
+                nickname,
+                bio: bio ? bio : null,
+                headline: headline ? headline : null,
+                avatarUri: avatarUri ? avatarUri : null,
+                interests: [],
+                badges: [],
+              },
+            },
+          },
+          select: { id: true },
+        });
+
+        await tx.phoneVerification.update({
+          where: { id: request.id },
+          data: {
+            user: { connect: { id: user.id } },
+            completedAt: new Date(),
+          },
+        });
+
+        return user.id;
+      });
+
+      const token = this.makeToken({ sub: result });
+      const user = await this.serializeAuthUser(result);
+      return { token, user };
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        throw new ConflictException('Phone number already registered');
+      }
+      throw error;
+    }
   }
 }
