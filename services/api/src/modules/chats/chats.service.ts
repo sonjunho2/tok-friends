@@ -3,6 +3,25 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 
+const chatWithUsersInclude = Prisma.validator<Prisma.ChatInclude>()({
+  userA: {
+    select: {
+      id: true,
+      displayName: true,
+      profile: { select: { nickname: true, avatarUri: true } },
+    },
+  },
+  userB: {
+    select: {
+      id: true,
+      displayName: true,
+      profile: { select: { nickname: true, avatarUri: true } },
+    },
+  },
+});
+
+type ChatWithUsers = Prisma.ChatGetPayload<{ include: typeof chatWithUsersInclude }>;
+
 type DirectRoomResponse = {
   id: string;
   title: string;
@@ -18,22 +37,7 @@ type DirectRoomResponse = {
 export class ChatsService {
     constructor(private readonly prisma: PrismaService) {}
 
-  private readonly chatInclude = {
-    userA: {
-      select: {
-        id: true,
-        displayName: true,
-        profile: { select: { nickname: true, avatarUri: true } },
-      },
-    },
-    userB: {
-      select: {
-        id: true,
-        displayName: true,
-        profile: { select: { nickname: true, avatarUri: true } },
-      },
-    },
-  } satisfies Prisma.ChatInclude;
+  private readonly chatInclude = chatWithUsersInclude;
 
   async list() {
     return this.prisma.chat.findMany({ take: 20, orderBy: { lastMessageAt: 'desc' } });
@@ -115,12 +119,12 @@ export class ChatsService {
     return this.serializeDirectChat(chat, currentUserId);
   }
 
-  private serializeDirectChat(chat: Prisma.ChatGetPayload<{ include: typeof this.chatInclude }>, currentUserId: string): DirectRoomResponse {
+  private serializeDirectChat(chat: ChatWithUsers, currentUserId: string): DirectRoomResponse {
     const userA = chat.userA;
     const userB = chat.userB;
 
     const titleSource = chat.userAId === currentUserId ? userB : userA;
-    const makeDisplayName = (participant: typeof userA) =>
+    const makeDisplayName = (participant: ChatWithUsers['userA']) =>
       participant.displayName || participant.profile?.nickname || null;
 
     return {
