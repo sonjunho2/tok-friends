@@ -22,6 +22,8 @@ type UpdateUserRequest = {
   region2?: string;
   interests?: string[] | string;
   marketingOptIn?: boolean | string;
+  headline?: string;
+  avatarUri?: string;
 };
 
 @ApiTags('users')
@@ -75,7 +77,9 @@ export class UsersController {
     const marketingOptIn = this.normalizeBoolean(body.marketingOptIn);
 
     const bioValue = typeof body.bio === 'string' ? body.bio.trim() : undefined;
-
+    const headlineValue = typeof body.headline === 'string' ? body.headline.trim() : undefined;
+    const avatarUriValue = typeof body.avatarUri === 'string' ? body.avatarUri.trim() : undefined;
+    
     const updated = await this.users.updateProfile(id, {
       displayName: body.displayName?.trim() || undefined,
       nickname: body.nickname?.trim() || undefined,
@@ -84,6 +88,10 @@ export class UsersController {
       region2: body.region2?.trim() || undefined,
       interests,
       marketingOptIn,
+      headline:
+        headlineValue === undefined ? undefined : headlineValue.length ? headlineValue : null,
+      avatarUri:
+        avatarUriValue === undefined ? undefined : avatarUriValue.length ? avatarUriValue : null,
     });
 
     return { ok: true, data: this.serializeUser(updated) };
@@ -107,11 +115,14 @@ export class UsersController {
       provider: user.provider,
       region1: user.region1 ?? null,
       region2: user.region2 ?? null,
+      pointsBalance: user.pointsBalance ?? 0,
       createdAt: user.createdAt,
       profile: user.profile
         ? {
             nickname: user.profile.nickname,
             bio: user.profile.bio,
+            headline: user.profile.headline ?? null,
+            avatarUri: user.profile.avatarUri ?? null,
             interests: user.profile.interests ?? [],
             badges: user.profile.badges ?? [],
             marketingOptIn: visibility?.marketingOptIn ?? false,
