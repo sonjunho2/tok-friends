@@ -7,6 +7,8 @@ import { HealthModule } from './health/health.module';
 import { ChatsModule } from './chats/chats.module';
 import { ReportsModule } from './reports/reports.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { StoreModule } from './store/store.module';
+import { LegalDocumentsModule } from './legal-documents/legal-documents.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt.guard';
 
@@ -20,6 +22,8 @@ import { JwtAuthGuard } from './auth/jwt.guard';
     ChatsModule,
     ReportsModule,
     MetricsModule,
+    StoreModule,
+    LegalDocumentsModule,
   ],
   providers: [
     {
