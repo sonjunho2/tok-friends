@@ -62,6 +62,8 @@ export class UsersService {
       nickname?: string | null;
       interests?: string[];
       marketingOptIn?: boolean;
+      headline?: string | null;
+      avatarUri?: string | null;
     },
   ) {
     const existingProfile = await this.prisma.profile.findUnique({
@@ -87,6 +89,14 @@ export class UsersService {
 
     if (payload.interests !== undefined) {
       profileUpdate.interests = payload.interests;
+    }
+
+    if (payload.headline !== undefined) {
+      profileUpdate.headline = payload.headline ?? null;
+    }
+
+    if (payload.avatarUri !== undefined) {
+      profileUpdate.avatarUri = payload.avatarUri ?? null;
     }
 
     if (payload.nickname !== undefined || payload.displayName !== undefined) {
@@ -115,6 +125,8 @@ export class UsersService {
             nickname:
               payload.nickname ?? payload.displayName ?? existingProfile?.nickname ?? '회원',
             bio: payload.bio ?? null,
+            headline: payload.headline ?? null,
+            avatarUri: payload.avatarUri ?? null,
             interests: payload.interests ?? existingProfile?.interests ?? [],
             badges: existingProfile?.badges ?? [],
             visibility: Object.keys(profileVisibility).length ? (profileVisibility as any) : undefined,
