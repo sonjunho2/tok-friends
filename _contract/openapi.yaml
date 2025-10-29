@@ -681,6 +681,43 @@ paths:
       responses:
         302:
           description: "Redirect to /docs"
+    /{fallbackPath}:
+    post:
+      summary: "Legacy sequential POST fallback"
+      description: "Handles legacy mobile POST attempts that still probe multiple candidates (e.g., tryPostJsonSequential). Returns 410 until a canonical endpoint is agreed."
+      operationId: "legacyFallbackPost"
+      tags:
+        - "legacy"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: "fallbackPath"
+          in: "path"
+          required: true
+          description: "First path segment captured by the wildcard route; full requested path is echoed in the response body."
+          schema:
+            type: "string"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: true
+      responses:
+        410:
+          description: "Legacy path is no longer supported; client should switch to the canonical POST."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  message:
+                    type: "string"
+                  requestedPath:
+                    type: "string"
+        501:
+          description: "Placeholder until legacy bridging logic is implemented."
   /health:
     get:
       summary: "Health check"
