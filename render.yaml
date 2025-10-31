@@ -23,8 +23,4 @@ services:
         sync: false
       - key: CORS_ORIGIN
         value: https://tokfriends-admin.vercel.app,https://tokfriends.app,https://www.tokfriends.app
-      - key: PRISMA_FIELD_ENCRYPTION_KEY
-        sync: false
-      - key: RENDER
-        value: "true"
     healthCheckPath: /health
