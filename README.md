@@ -30,3 +30,9 @@ This is the **enhanced** version including:
 - **KPI 대시보드**: Postgres 뷰/머티리얼라이즈드 뷰 + Metabase 연결 가이드 & 샘플 카드 쿼리
 - **스토어 제출 세트**: App Store/Play 마켓 카피(ko), 키워드, 스크린샷 **SVG 템플릿 6종**
 - **환경설정**: .env 예시 업데이트(번역/푸시/스토리지/영수증)
+
+## Environment & Security Notes
+- Copy `.env.example` to `.env` files for each service and fill in real secrets before running locally or deploying.
+- `DATABASE_URL`, `JWT_SECRET`, and `NEXT_PUBLIC_TOK_API_BASE` are required for the API and admin clients to communicate.
+- `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` are required when running `prisma db seed`; remove or rotate the bootstrap credentials immediately after use.
+- Never commit real secrets. Prefer encrypted secrets management (Render/Vercel dashboard, GitHub Actions secrets) over checked-in values.
