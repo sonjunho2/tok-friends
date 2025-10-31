@@ -5,8 +5,16 @@ import * as argon2 from 'argon2'
 const prisma = new PrismaClient()
 
 async function seedAdminUser() {
-  const email = process.env.SEED_ADMIN_EMAIL || 'admin@example.com'
-  const plain = process.env.SEED_ADMIN_PASSWORD || 'Admin123!'
+  const email = process.env.SEED_ADMIN_EMAIL
+  if (!email) {
+    throw new Error('SEED_ADMIN_EMAIL must be set before seeding admin user.')
+  }
+
+  const plain = process.env.SEED_ADMIN_PASSWORD
+  if (!plain) {
+    throw new Error('SEED_ADMIN_PASSWORD must be set before seeding admin user.')
+  }
+  // TODO(security): Manage admin seed credentials via secrets manager/environment vars and rotate them after use.
 
   const passwordHash = await argon2.hash(plain)
 
