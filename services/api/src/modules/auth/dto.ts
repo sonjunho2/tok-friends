@@ -9,6 +9,7 @@ import {
   Min,
   MinLength,
   IsDateString,
+  IsBoolean,
 } from 'class-validator';
 
 export class EmailSignupDto {
@@ -89,4 +90,8 @@ export class CompletePhoneProfileDto {
   @IsOptional()
   @IsString()
   avatarUri?: string;
+  
+  @IsOptional()
+  @IsBoolean()
+  adminOverride?: boolean;
 }
