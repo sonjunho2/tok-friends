@@ -244,10 +244,72 @@ export class AuthService {
     return { needsProfile: true, verificationId: request.id };
   }
 
-  async completePhoneProfile(dto: CompletePhoneProfileDto) {
+  async completePhoneProfile(
+    dto: CompletePhoneProfileDto,
+    adminOverride = false,
+  ) {
     const digits = this.normalizePhone(dto.phone);
     if (!digits) {
       throw new BadRequestException('Invalid phone number');
+    }
+
+    const dob = new Date(Date.UTC(dto.birthYear, 0, 1));
+    const region = (dto.region ?? '').trim();
+    const [region1, ...restRegion] = region ? region.split(/\s+/) : [''];
+    const region2 = restRegion.join(' ').trim();
+
+    const nickname = dto.nickname.trim();
+    const headline = dto.headline?.trim();
+    const bio = dto.bio?.trim();
+    const avatarUri = dto.avatarUri?.trim();
+
+    if (adminOverride) {
+      const phoneHash = this.hashPhone(dto.phone);
+
+      const existing = await this.prisma.user.findFirst({
+        where: { phoneHash },
+        select: { id: true },
+      });
+
+      if (existing) {
+        const token = this.makeToken({ sub: existing.id });
+        const user = await this.serializeAuthUser(existing.id);
+        return { token, user };
+      }
+
+      try {
+        const created = await this.prisma.user.create({
+          data: {
+            provider: 'phone',
+            phoneHash,
+            displayName: nickname,
+            dob,
+            gender: dto.gender,
+            region1: region1 || null,
+            region2: region2 ? region2 : null,
+            profile: {
+              create: {
+                nickname,
+                bio: bio ? bio : null,
+                headline: headline ? headline : null,
+                avatarUri: avatarUri ? avatarUri : null,
+                interests: [],
+                badges: [],
+              },
+            },
+          },
+          select: { id: true },
+        });
+
+        const token = this.makeToken({ sub: created.id });
+        const user = await this.serializeAuthUser(created.id);
+        return { token, user };
+      } catch (error: any) {
+        if (error?.code === 'P2002') {
+          throw new ConflictException('Phone number already registered');
+        }
+        throw error;
+      }
     }
 
     const request = await this.prisma.phoneVerification.findUnique({
@@ -287,16 +349,6 @@ export class AuthService {
       const user = await this.serializeAuthUser(existing.id);
       return { token, user };
     }
-
-    const dob = new Date(Date.UTC(dto.birthYear, 0, 1));
-    const region = (dto.region ?? '').trim();
-    const [region1, ...restRegion] = region ? region.split(/\s+/) : [''];
-    const region2 = restRegion.join(' ').trim();
-
-    const nickname = dto.nickname.trim();
-    const headline = dto.headline?.trim();
-    const bio = dto.bio?.trim();
-    const avatarUri = dto.avatarUri?.trim();
 
     try {
       const result = await this.prisma.$transaction(async (tx) => {
