@@ -22,5 +22,5 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: CORS_ORIGIN
-        value: https://tokfriends-admin.vercel.app,https://tokfriends.app,https://www.tokfriends.app
+        value: https://tokfriends-admin.vercel.app,https://tokfriends.app,https://www.tokfriends.app,https://snack-web-player.s3.us-west-1.amazonaws.com
     healthCheckPath: /health
