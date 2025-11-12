@@ -1904,3 +1904,169 @@ paths:
       security:
         -
           bearerAuth:
+  # 관리자용 엔드포인트 추가
+  /auth/login/phone:
+    post:
+      summary: "관리자용 휴대폰 로그인"
+      tags:
+        - "auth"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                phone:
+                  type: "string"
+                code:
+                  type: "string"
+      responses:
+        200:
+          description: "OK"
+
+  /posts/{postId}:
+    patch:
+      summary: "게시글 수정"
+      parameters:
+        - in: "path"
+          name: "postId"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+      responses:
+        200:
+          description: "OK"
+    delete:
+      summary: "게시글 삭제"
+      parameters:
+        - in: "path"
+          name: "postId"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        204:
+          description: "No Content"
+
+  /announcements:
+    post:
+      summary: "공지사항 생성"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+      responses:
+        201:
+          description: "Created"
+
+  /gifts:
+    post:
+      summary: "선물 생성"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+      responses:
+        201:
+          description: "Created"
+
+  /gifts/{giftId}:
+    patch:
+      summary: "선물 수정"
+      parameters:
+        - in: "path"
+          name: "giftId"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+    delete:
+      summary: "선물 삭제"
+      parameters:
+        - in: "path"
+          name: "giftId"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        204:
+          description: "No Content"
+
+  /verifications/phone/otp-logs:
+    get:
+      summary: "휴대폰 OTP 로그 목록"
+      responses:
+        200:
+          description: "OK"
+
+  /verifications/phone/pending:
+    get:
+      summary: "대기중인 휴대폰 인증 세션 목록"
+      responses:
+        200:
+          description: "OK"
+
+  /verifications/phone/{id}/resend:
+    post:
+      summary: "OTP 재발송"
+      parameters:
+        - in: "path"
+          name: "id"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+
+  /verifications/phone/{id}/approve:
+    post:
+      summary: "휴대폰 인증 승인"
+      parameters:
+        - in: "path"
+          name: "id"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+
+  /verifications/phone/{id}/expire:
+    post:
+      summary: "휴대폰 인증 만료 처리"
+      parameters:
+        - in: "path"
+          name: "id"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "OK"
+
+  /verifications/phone/manual-complete:
+    post:
+      summary: "휴대폰 프로필 강제 완료"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+      responses:
+        200:
+          description: "OK"
