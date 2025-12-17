@@ -19,12 +19,13 @@ import {
 } from './dto';
 
 const OTP_EXPIRY_SECONDS = 180;
+const DISABLE_AUTH = process.env.DISABLE_AUTH_AND_PAYMENT === 'true';
 
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService) {}
 
-    private normalizePhone(phone: string) {
+  private normalizePhone(phone: string) {
     return phone.replace(/[^\d]/g, '');
   }
 
@@ -140,6 +141,10 @@ export class AuthService {
   }
 
   async requestPhoneOtp(dto: PhoneRequestOtpDto) {
+    if (DISABLE_AUTH) {
+      return { requestId: `dummy-${Date.now()}`, expiresIn: 300 };
+    }
+
     const { digits, countryCode } = this.formatPhoneKey(dto.phone, dto.countryCode);
 
     const code = this.generateOtpCode();
@@ -177,6 +182,15 @@ export class AuthService {
   }
 
   async verifyPhoneOtp(dto: PhoneVerifyDto) {
+    if (DISABLE_AUTH) {
+      return {
+        token: 'dummy-token',
+        adminOverride: true,
+        needsProfile: true,
+        verificationId: `admin-${Date.now()}`,
+      };
+    }
+
     const digits = this.normalizePhone(dto.phone);
     if (!digits) {
       throw new BadRequestException('Invalid phone number');
@@ -248,6 +262,10 @@ export class AuthService {
     dto: CompletePhoneProfileDto,
     adminOverride = false,
   ) {
+    if (DISABLE_AUTH) {
+      adminOverride = true;
+    }
+
     const digits = this.normalizePhone(dto.phone);
     if (!digits) {
       throw new BadRequestException('Invalid phone number');
@@ -264,7 +282,7 @@ export class AuthService {
     const avatarUri = dto.avatarUri?.trim();
 
     if (adminOverride) {
-      const phoneHash = this.hashPhone(dto.phone);
+      const phoneHash = this.hashPhone(dto.phone, dto.countryCode);
 
       const existing = await this.prisma.user.findFirst({
         where: { phoneHash },
