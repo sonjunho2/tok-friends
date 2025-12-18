@@ -225,7 +225,7 @@ export class AuthService {
       verificationUpdate.verifiedAt = new Date();
     }
 
-    const phoneHash = this.hashPhone(digits, request.countryCode);
+      const phoneHash = this.hashPhone(dto.phone);
 
     let resolvedUserId: string | null = request.userId ?? null;
     if (!resolvedUserId) {
