@@ -282,7 +282,8 @@ export class AuthService {
     const avatarUri = dto.avatarUri?.trim();
 
     if (adminOverride) {
-      const phoneHash = this.hashPhone(dto.phone, dto.countryCode);
+      // CompletePhoneProfileDto does not include countryCode; hash using digits only.
+      const phoneHash = this.hashPhone(dto.phone);
 
       const existing = await this.prisma.user.findFirst({
         where: { phoneHash },
