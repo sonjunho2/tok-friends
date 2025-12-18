@@ -13,6 +13,7 @@ import {
 import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
+import { UsersService } from './users.service';
 
 type AdminUserNoteDto = { note: string; authorId?: string };
 type AdminUserActionDto = { reason?: string; performedBy?: string; metadata?: Record<string, any> };
@@ -27,7 +28,10 @@ type ProfileVisibilitySettings = {
 @ApiBearerAuth()
 @Controller('admin/users')
 export class AdminUsersController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Get()
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
@@ -148,7 +152,20 @@ export class AdminUsersController {
     };
   }
 
-    @Get(':id')
+  @Get('search')
+  @ApiQuery({ name: 'keyword', required: false, type: String })
+  @ApiQuery({ name: 'phone', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  async searchUsers(
+    @Query('keyword') keyword?: string,
+    @Query('phone') phone?: string,
+    @Query('status') status?: string,
+  ) {
+    const users = await this.usersService.searchUsers({ keyword, phone, status });
+    return { ok: true, data: users, items: users };
+  }
+
+  @Get(':id')
   async detail(@Param('id') id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
