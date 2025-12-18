@@ -225,7 +225,7 @@ export class AuthService {
       verificationUpdate.verifiedAt = new Date();
     }
 
-      const phoneHash = this.hashPhone(dto.phone);
+    const phoneHash = this.hashPhone(dto.phone);
 
     let resolvedUserId: string | null = request.userId ?? null;
     if (!resolvedUserId) {
@@ -262,10 +262,6 @@ export class AuthService {
     dto: CompletePhoneProfileDto,
     adminOverride = false,
   ) {
-    if (DISABLE_AUTH) {
-      adminOverride = true;
-    }
-
     const digits = this.normalizePhone(dto.phone);
     if (!digits) {
       throw new BadRequestException('Invalid phone number');
@@ -281,54 +277,22 @@ export class AuthService {
     const bio = dto.bio?.trim();
     const avatarUri = dto.avatarUri?.trim();
 
-    if (adminOverride) {
-      // CompletePhoneProfileDto does not include countryCode; hash using digits only.
-      const phoneHash = this.hashPhone(dto.phone);
-
-      const existing = await this.prisma.user.findFirst({
-        where: { phoneHash },
-        select: { id: true },
+    if (DISABLE_AUTH || adminOverride) {
+      const userId = await this.createOrUpdatePhoneUser({
+        phoneDigits: digits,
+        nickname,
+        dob,
+        gender: dto.gender,
+        region1: region1 || null,
+        region2: region2 || null,
+        headline: headline ?? null,
+        bio: bio ?? null,
+        avatarUri: avatarUri ?? null,
       });
 
-      if (existing) {
-        const token = this.makeToken({ sub: existing.id });
-        const user = await this.serializeAuthUser(existing.id);
-        return { token, user };
-      }
-
-      try {
-        const created = await this.prisma.user.create({
-          data: {
-            provider: 'phone',
-            phoneHash,
-            displayName: nickname,
-            dob,
-            gender: dto.gender,
-            region1: region1 || null,
-            region2: region2 ? region2 : null,
-            profile: {
-              create: {
-                nickname,
-                bio: bio ? bio : null,
-                headline: headline ? headline : null,
-                avatarUri: avatarUri ? avatarUri : null,
-                interests: [],
-                badges: [],
-              },
-            },
-          },
-          select: { id: true },
-        });
-
-        const token = this.makeToken({ sub: created.id });
-        const user = await this.serializeAuthUser(created.id);
-        return { token, user };
-      } catch (error: any) {
-        if (error?.code === 'P2002') {
-          throw new ConflictException('Phone number already registered');
-        }
-        throw error;
-      }
+      const token = this.makeToken({ sub: userId });
+      const user = await this.serializeAuthUser(userId);
+      return { token, user };
     }
 
     const request = await this.prisma.phoneVerification.findUnique({
@@ -414,5 +378,79 @@ export class AuthService {
       }
       throw error;
     }
+  }
+
+  private async createOrUpdatePhoneUser(options: {
+    phoneDigits: string;
+    nickname: string;
+    dob: Date;
+    gender: string;
+    region1?: string | null;
+    region2?: string | null;
+    headline?: string | null;
+    bio?: string | null;
+    avatarUri?: string | null;
+  }) {
+    const phoneHash = this.hashPhone(options.phoneDigits);
+
+    const profileUpdate: Prisma.ProfileUpdateInput = {};
+    if (options.nickname) {
+      profileUpdate.nickname = options.nickname;
+    }
+    if (options.bio !== undefined) {
+      profileUpdate.bio = options.bio;
+    }
+    if (options.headline !== undefined) {
+      profileUpdate.headline = options.headline;
+    }
+    if (options.avatarUri !== undefined) {
+      profileUpdate.avatarUri = options.avatarUri;
+    }
+
+    const user = await this.prisma.user.upsert({
+      where: { phoneHash },
+      create: {
+        provider: 'phone',
+        phoneHash,
+        displayName: options.nickname,
+        dob: options.dob,
+        gender: options.gender,
+        region1: options.region1 ?? null,
+        region2: options.region2 ?? null,
+        profile: {
+          create: {
+            nickname: options.nickname || '회원',
+            bio: options.bio ?? null,
+            headline: options.headline ?? null,
+            avatarUri: options.avatarUri ?? null,
+            interests: [],
+            badges: [],
+          },
+        },
+      },
+      update: {
+        displayName: options.nickname ?? undefined,
+        dob: options.dob,
+        gender: options.gender,
+        region1: options.region1 ?? null,
+        region2: options.region2 ?? null,
+        profile: {
+          upsert: {
+            update: profileUpdate,
+            create: {
+              nickname: options.nickname || '회원',
+              bio: options.bio ?? null,
+              headline: options.headline ?? null,
+              avatarUri: options.avatarUri ?? null,
+              interests: [],
+              badges: [],
+            },
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    return user.id;
   }
 }
