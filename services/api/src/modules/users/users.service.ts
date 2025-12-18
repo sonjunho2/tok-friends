@@ -2,6 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class UsersService {
@@ -50,6 +51,83 @@ export class UsersService {
         profile: { select: { nickname: true, bio: true, interests: true } },
       },
     });
+  }
+
+  async searchUsers(filters: { keyword?: string; phone?: string; status?: string; limit?: number }) {
+    const where: Prisma.UserWhereInput = {};
+    const or: Prisma.UserWhereInput['OR'] = [];
+
+    const keyword = filters.keyword?.trim();
+    if (keyword) {
+      or.push(
+        { email: { contains: keyword, mode: Prisma.QueryMode.insensitive } },
+        { displayName: { contains: keyword, mode: Prisma.QueryMode.insensitive } },
+        { profile: { nickname: { contains: keyword, mode: Prisma.QueryMode.insensitive } } },
+      );
+    }
+
+    const phoneDigits = this.normalizePhone(filters.phone);
+    if (phoneDigits) {
+      where.phoneHash = this.hashPhone(phoneDigits);
+    }
+
+    if (filters.status?.trim()) {
+      where.status = filters.status.trim().toLowerCase();
+    }
+
+    if (or.length) {
+      where.OR = or;
+    }
+
+    const take = Math.min(100, Math.max(1, filters.limit ?? 50));
+
+    const users = await this.prisma.user.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take,
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        status: true,
+        provider: true,
+        createdAt: true,
+        region1: true,
+        region2: true,
+        profile: {
+          select: {
+            nickname: true,
+            bio: true,
+            headline: true,
+            avatarUri: true,
+            interests: true,
+            badges: true,
+          },
+        },
+      },
+    });
+
+    return users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      nickname: user.profile?.nickname ?? null,
+      status: user.status,
+      provider: user.provider,
+      createdAt: user.createdAt,
+      region1: user.region1 ?? null,
+      region2: user.region2 ?? null,
+      profile: user.profile
+        ? {
+            nickname: user.profile.nickname,
+            bio: user.profile.bio ?? null,
+            headline: user.profile.headline ?? null,
+            avatarUri: user.profile.avatarUri ?? null,
+            interests: user.profile.interests ?? [],
+            badges: user.profile.badges ?? [],
+          }
+        : null,
+    }));
   }
 
   async updateProfile(
@@ -149,5 +227,13 @@ export class UsersService {
         },
       },
     });
+  }
+
+  private normalizePhone(phone?: string) {
+    return phone ? phone.replace(/[^\d]/g, '') : '';
+  }
+
+  private hashPhone(phoneDigits: string) {
+    return createHash('sha256').update(`KR:${phoneDigits}`).digest('hex');
   }
 }
