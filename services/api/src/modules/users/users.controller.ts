@@ -44,9 +44,24 @@ export class UsersController {
 
   @ApiQuery({ name: 'q', required: false, type: String })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'keyword', required: false, type: String })
+  @ApiQuery({ name: 'phone', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, type: String })
   @Get('search')
-  async search(@Query('q') q: string = '', @Query('limit') limit?: string) {
+  async search(
+    @Query('q') q: string = '',
+    @Query('limit') limit?: string,
+    @Query('keyword') keyword?: string,
+    @Query('phone') phone?: string,
+    @Query('status') status?: string,
+  ) {
     const take = Math.min(50, Math.max(1, Number(limit ?? 20) || 20));
+    const hasFilters =
+      Boolean(keyword?.trim()) || Boolean(phone?.trim()) || Boolean(status?.trim());
+    if (hasFilters) {
+      const users = await this.users.searchUsers({ keyword, phone, status, limit: take });
+      return { ok: true, data: users, items: users };
+    }
     const results = await this.users.search(q ?? '', take);
     const items = results.map((item) => ({
       id: item.id,
