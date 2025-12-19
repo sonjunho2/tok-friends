@@ -275,7 +275,8 @@ export class AuthService {
     const nickname = dto.nickname.trim();
     const headline = dto.headline?.trim();
     const bio = dto.bio?.trim();
-    const avatarUri = dto.avatarUri?.trim();
+    const avatarUriValue = dto.avatarUri?.trim();
+    const avatarUri = avatarUriValue && avatarUriValue.length > 0 ? avatarUriValue : null;
 
     if (DISABLE_AUTH || adminOverride) {
       const userId = await this.createOrUpdatePhoneUser({
@@ -287,7 +288,7 @@ export class AuthService {
         region2: region2 || null,
         headline: headline ?? null,
         bio: bio ?? null,
-        avatarUri: avatarUri ?? null,
+        avatarUri,
       });
 
       const token = this.makeToken({ sub: userId });
@@ -349,7 +350,7 @@ export class AuthService {
                 nickname,
                 bio: bio ? bio : null,
                 headline: headline ? headline : null,
-                avatarUri: avatarUri ? avatarUri : null,
+                avatarUri,
                 interests: [],
                 badges: [],
               },
