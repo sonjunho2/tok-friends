@@ -4,6 +4,13 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { createHash } from 'crypto';
 
+export type UserSearchFilters = {
+  keyword?: string;
+  phone?: string;
+  status?: string;
+  limit?: number;
+};
+
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -28,32 +35,25 @@ export class UsersService {
     const trimmed = term.trim();
     if (!trimmed) return [];
 
-    return this.prisma.user.findMany({
-      where: {
-        OR: [
-          { email: { contains: trimmed, mode: Prisma.QueryMode.insensitive } },
-          { displayName: { contains: trimmed, mode: Prisma.QueryMode.insensitive } },
-          {
-            profile: {
-              nickname: { contains: trimmed, mode: Prisma.QueryMode.insensitive },
-            },
-          },
-        ],
-      },
-      take,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        status: true,
-        createdAt: true,
-        profile: { select: { nickname: true, bio: true, interests: true } },
-      },
-    });
+    const users = await this.searchUsers({ keyword: trimmed, limit: take });
+
+    return users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      status: user.status,
+      createdAt: user.createdAt,
+      profile: user.profile
+        ? {
+            nickname: user.profile.nickname,
+            bio: user.profile.bio,
+            interests: user.profile.interests,
+          }
+        : null,
+    }));
   }
 
-  async searchUsers(filters: { keyword?: string; phone?: string; status?: string; limit?: number }) {
+  async searchUsers(filters: UserSearchFilters) {
     const where: Prisma.UserWhereInput = {};
     const or: Prisma.UserWhereInput['OR'] = [];
 
